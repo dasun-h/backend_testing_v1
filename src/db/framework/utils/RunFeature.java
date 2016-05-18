@@ -56,9 +56,6 @@ public class RunFeature {
 
     public static void main(String[] args) {
         try {
-//			utils.get_tar_file_list(new File("C:\\Users\\m526092\\eclipse_workspace\\JenkinsSlave\\builds\\processed\\11.120.180.247.DSV_test_Windows_7@2.69.1441286019238.tar"), "testreport/");
-//			utils.outputJarFile(new File("C:\\Users\\m526092\\eclipse_workspace\\JenkinsSlave\\repo\\SDT\\master.sdt.jar"), "sdt/features/", "features");
-
             if (args.length == 0) {
                 new RunFeature();
             } else if (args[0].equals("-self_clean")) {

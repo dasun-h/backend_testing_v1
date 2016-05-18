@@ -68,8 +68,7 @@ public class Hooks extends StepUtils {
                         "\nFAILED STEP: " + this.getScenarioStepName(getScenarioIndex() - 1).trim() +
                         "\nERROR: " + errorMsg +
                         "\n<--------------------->\n\n");
-                if (errorMsg.startsWith("sdt.utils.StepUtils$ProductionException:") ||
-                        errorMsg.startsWith("sdt.utils.StepUtils$SkipException:"))
+                if (errorMsg.startsWith("db.framework.utils.StepUtils$SkipException:"))
                     this.clearStepResult(-1);
             }
             System.out.println("\n--> DURATION: " + Utils.toDuration(System.currentTimeMillis() - scenarioStartTime) + "\n\n\n\n");

@@ -602,7 +602,7 @@ public class MainRunner {
                 featureScenarios.set(i, value);
             }
 
-        //--glue sdt.runner.steps --plugin json:logs/cucumber.json
+        //--glue db.shared.steps --plugin json:logs/cucumber.json
         featureScenarios.add("--glue");
         if (project != null) {
             featureScenarios.add(project);

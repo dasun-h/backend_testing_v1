@@ -444,7 +444,7 @@ public class Utils {
             if (displayEls.size() == size) {
                 break;
             }
-            if (trace.startsWith("sdt."))
+            if (trace.startsWith("db."))
                 displayEls.add(trace);
             if (--count <= 0)
                 break;

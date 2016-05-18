@@ -1815,13 +1815,6 @@ public abstract class StepUtils {
      */
     public static boolean waitForPageReady(final String containText) {
         int waitTime = MainRunner.timeout;
-        //final long ts = System.currentTimeMillis();
-        //List<String> stacks = utils.getCallFromFunction(".waitForPageReady(");
-        //if (stacks.toString().contains(".StepUtils.click("))
-        //    utils.threadSleep(safari() ? 3000 : 500, null);
-        //String stack = utils.listToString(stacks, "\n\t ", new String[]{".StepUtils.", "sdt.runner.MainRunner.main("});
-        //System.out.print("..." + new Date() + "-waitForPageReady():\n\t " + stack);
-
         try {
             new WebDriverWait(MainRunner.getWebDriver(), waitTime).until((WebDriver wDriver) -> {
                 //System.out.print("\t:" + (System.currentTimeMillis() - ts));
@@ -2149,28 +2142,6 @@ public abstract class StepUtils {
      */
     public boolean isStepPassed(int step) {
         return getStepResult(step).getStatus().equals("passed");
-    }
-
-    /**
-     * Exception to throw when an "oops" error shows on the page
-     */
-    public static class OopsException extends Exception {
-        private static final long serialVersionUID = 3719597044976490613L;
-
-        public OopsException(String msg) {
-            super(msg);
-        }
-    }
-
-    /**
-     * Exception to throw when a step or operation should not run on production (Ex.: placing an order)
-     */
-    public static class ProductionException extends Exception {
-        private static final long serialVersionUID = 3719597044976490614L;
-
-        public ProductionException(String msg) {
-            super(msg);
-        }
     }
 
     //=======================================================================
