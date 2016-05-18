@@ -1,0 +1,12 @@
+ChromeDriver
+    binary: 32 bit
+    version: 2.21
+    download: https://sites.google.com/a/chromium.org/chromedriver/downloads
+IEDriverServer
+    binary: 32 bit
+    version: 2.53
+    download: http://www.seleniumhq.org/download/
+Safari Driver
+    version: 2.48
+    download: http://www.seleniumhq.org/download/
+    how to install: https://github.com/SeleniumHQ/selenium/wiki/SafariDriver

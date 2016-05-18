@@ -1,0 +1,5 @@
+{
+  "retrieve_customer_info": "Select * from tbl_users ORDER BY id DESC LIMIT 1",
+  "retrieve_updated_customer_info": "Select * from tbl_users where id = ? ORDER BY id DESC LIMIT 1",
+  "retrieve_deleted_customer_info": "Select * from tbl_users where id = ? "
+}

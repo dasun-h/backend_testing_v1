@@ -1,0 +1,13 @@
+{
+  "include": [
+    "panel.header",
+    "panel.footer"
+  ],
+  "url": "http://10.101.15.48:8080/dbtest/",
+  "add_users_btn": "cssSelector, .btn.btn-large.btn-info",
+  "added_users_tbl": "cssSelector, .table.table-bordered.table-responsive",
+  "table_row": "cssSelector, .container>table>tbody>tr>td",
+  "remove_link": "cssSelector, a>i.glyphicon-remove-circle",
+  "update_link": "cssSelector, a>i.glyphicon-edit",
+  "pagination": "cssSelector, .pagination>li>a"
+}

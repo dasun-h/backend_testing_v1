@@ -1,0 +1,14 @@
+{
+  "include": [
+    "panel.header",
+    "panel.footer"
+  ],
+  "url": "http://10.101.15.48:8080/dbtest/edit-data.php",
+  "edit_record_btn": "cssSelector, .btn-primary[name='btn-update']",
+  "cancel_btn": "cssSelector, a.btn-success",
+  "edit_first_name": "cssSelector, .form-control[name='first_name']",
+  "edit_last_name": "cssSelector, .form-control[name='last_name']",
+  "edit_email": "cssSelector, .form-control[name='email_id']",
+  "edit_contact_id": "cssSelector, .form-control[name='contact_no']",
+  "edit_success_msg": "cssSelector, .alert-info"
+}
