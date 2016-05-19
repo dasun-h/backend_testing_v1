@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><project>
+    <modelVersion>4.0.0</modelVersion>
+
+    <properties>
+        <jdk.version>1.8</jdk.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <project.name>BackendTesting</project.name>
+        <project.version>1.0-SNAPSHOT</project.version>
+        <sdt_framework.version>LATEST</sdt_framework.version>
+    </properties>
+
+    <groupId>db</groupId>
+    <artifactId>db-${project.name}</artifactId>
+    <version>${project.version}</version>
+
+
+
+    <dependencies>
+        <dependency>
+            <groupId>db</groupId>
+            <artifactId>db-framework</artifactId>
+            <version>${db_framework.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>db</groupId>
+            <artifactId>db-framework</artifactId>
+            <version>${db_framework.version}</version>
+            <classifier>sources</classifier>
+        </dependency>
+        <dependency>
+            <groupId>db</groupId>
+            <artifactId>db-framework</artifactId>
+            <version>${db_framework.version}</version>
+            <classifier>javadoc</classifier>
+        </dependency>
+    </dependencies>
+
+    <pluginRepositories>
+    </pluginRepositories>
+
+    <build>
+        <sourceDirectory>src</sourceDirectory>
+        <directory>classes</directory>
+
+        <resources>
+        </resources>
+
+        <testResources>
+        </testResources>
+
+        <pluginManagement>
+            <plugins>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${jdk.version}</source>
+                    <target>${jdk.version}</target>
+                    <includes>
+                        <include>db/shared/**/*.java</include>
+                        <include>db/projects/${project.name}/**/*.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
+            <!-- include all resources file -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.6</version>
+                <configuration>
+                    <includes>
+                        <include>db/shared/**/*</include>
+                        <include>db/projects/${project.name}/**/*</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
+            <!-- include sdt-framework.jar file -->
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>db.framework.runner.MainRunner</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+            </plugin>
+
+            <!-- include all resource files -->
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.6</version>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>classes/classes</outputDirectory>
+                            <encoding>UTF-8</encoding>
+                            <resources>
+                                <resource>
+                                    <directory>src</directory>
+                                    <includes>
+                                        <include>db/shared/**/*</include>
+                                        <include>db/projects/${project.name}/**/*</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+			<plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.1.1</version>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>db.framework.runner.MainRunner</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            
+        </plugins>
+    </build>
+
+    <profiles>
+    </profiles>
+</project>

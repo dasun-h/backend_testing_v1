@@ -9,15 +9,6 @@ public class DBConnection {
 
     public static Connection con = null;
 
-    public static void closeConnection() {
-        try {
-            if (con != null && !con.isClosed())
-                con.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
     public Connection createMySqlConnection() {
 
         if (con == null) {
@@ -39,6 +30,15 @@ public class DBConnection {
     public Connection createSqlConnection() {
         //TODO
         return con;
+    }
+
+    public static void closeConnection() {
+        try {
+            if (con != null && !con.isClosed())
+                con.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
 }
