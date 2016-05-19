@@ -6,14 +6,13 @@
         <jdk.version>1.8</jdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <project.domain>SolutionDevelopment</project.domain>
         <project.name>BackendTesting</project.name>
         <project.version>1.0-SNAPSHOT</project.version>
         <sdt_framework.version>LATEST</sdt_framework.version>
     </properties>
 
-    <groupId>com.macys.sdt</groupId>
-    <artifactId>sdt-${project.domain}-${project.name}</artifactId>
+    <groupId>db</groupId>
+    <artifactId>db-${project.name}</artifactId>
     <version>${project.version}</version>
 
     <repositories>
