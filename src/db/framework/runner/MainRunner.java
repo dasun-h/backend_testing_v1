@@ -610,8 +610,6 @@ public class MainRunner {
         }
         featureScenarios.add("db.shared.steps");
         featureScenarios.add("--plugin");
-        featureScenarios.add("db.framework.utils.SDTFormatter");
-        featureScenarios.add("--plugin");
         featureScenarios.add("html:logs");
 
         try {
