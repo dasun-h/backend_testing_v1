@@ -4,4 +4,6 @@
 # But not these files...
 !/pom.xml
 !/bin/
+!/logs/
+!/target/
 
