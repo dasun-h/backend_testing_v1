@@ -6,7 +6,7 @@
         <jdk.version>1.8</jdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <project.name>BackendTesting</project.name>
+        <project.name>Backend_testing</project.name>
         <project.version>1.0-SNAPSHOT</project.version>
         <sdt_framework.version>LATEST</sdt_framework.version>
     </properties>
@@ -17,34 +17,34 @@
 
     <repositories>
         <repository>
-            <id>Macys_SDT</id>
-            <url>http://11.142.14.56:8081/nexus/content/repositories/Macys_SDT</url>
-            <releases>
-            	<enabled>true</enabled>
-            	<updatePolicy>always</updatePolicy>
-            </releases>
-            <snapshots>
-            	<enabled>true</enabled>
-            	<updatePolicy>always</updatePolicy>
-            </snapshots>
+            <id>google-drive-repository</id>
+            <url>file://C:/Users/Zone/google-drive/mvn-releases</url>
+         <releases>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+        </snapshots>
         </repository>
     </repositories>
 
     <dependencies>
         <dependency>
-            <groupId>com.macys.sdt</groupId>
-            <artifactId>sdt-framework</artifactId>
+            <groupId>com.backend.db</groupId>
+            <artifactId>db-framework</artifactId>
             <version>${sdt_framework.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.macys.sdt</groupId>
-            <artifactId>sdt-framework</artifactId>
+            <groupId>com.backend.db</groupId>
+            <artifactId>db-framework</artifactId>
             <version>${sdt_framework.version}</version>
             <classifier>sources</classifier>
         </dependency>
         <dependency>
-            <groupId>com.macys.sdt</groupId>
-            <artifactId>sdt-framework</artifactId>
+            <groupId>com.backend.db</groupId>
+            <artifactId>db-framework</artifactId>
             <version>${sdt_framework.version}</version>
             <classifier>javadoc</classifier>
         </dependency>

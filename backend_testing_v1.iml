@@ -10,9 +10,9 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="libs" level="project" />
-    <orderEntry type="library" name="Maven: com.macys.sdt:sdt-framework:0.0.165" level="project" />
-    <orderEntry type="library" name="Maven: com.macys.sdt:sdt-framework:sources:0.0.165" level="project" />
-    <orderEntry type="library" name="Maven: com.macys.sdt:sdt-framework:javadoc:0.0.165" level="project" />
+    <orderEntry type="library" name="Maven: com.backend.db:db-framework:0.0.181" level="project" />
+    <orderEntry type="library" name="Maven: com.backend.db:db-framework:sources:0.0.181" level="project" />
+    <orderEntry type="library" name="Maven: com.backend.db:db-framework:javadoc:0.0.181" level="project" />
     <orderEntry type="library" name="Maven: mysql:mysql-connector-java:5.1.39" level="project" />
   </component>
 </module>
