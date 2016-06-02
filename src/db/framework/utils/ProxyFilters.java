@@ -50,9 +50,6 @@ public class ProxyFilters {
     }
 
     private static boolean isFilter(String url, HttpMessageContents contents) {
-//		if (url != null)
-//			return false;
-
         String domain = getDomain(url);
         for (String exclude : excludeDomains) {
             if (domain.contains(exclude))
@@ -77,7 +74,6 @@ public class ProxyFilters {
                     if (fcache.length() == 0)
                         fcache.delete();
                     else {
-//                		System.out.println("-->Cache:" + contents.getContentType() + ":" + url);
                         DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.copiedBuffer(Utils.readSmallBinaryFile(fcache)));
                         response.headers().set(CONTENT_TYPE, contents.getContentType());
                         response.headers().set(CONTENT_LENGTH, response.content().readableBytes());
@@ -96,7 +92,6 @@ public class ProxyFilters {
             if (response.getStatus().equals(HttpResponseStatus.OK) && isFilter(url, contents)) {
                 File fcache = getCacheFile(url);
                 if (!fcache.exists()) {
-//	        		System.out.println("Save-->" + contents.getContentType() + ":" + messageInfo.getOriginalUrl());
                     Utils.writeSmallBinaryFile(contents.getBinaryContents(), fcache);
                 }
             }

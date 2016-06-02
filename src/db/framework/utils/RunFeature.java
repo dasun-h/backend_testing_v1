@@ -167,7 +167,6 @@ public class RunFeature {
             return;
         }
 
-
         File fpushed = new File(ws.getCanonicalPath() + File.separator + "jenkins_admin.pushed");
         if (fpushed.exists())
             return;
@@ -262,7 +261,6 @@ public class RunFeature {
                     hparams.put("file_data", Base64.encode(wbuffer));
                     this.m_runFeature.postToServer(hparams, cookies, result);
                     hparams.put("append", "true");
-//					System.out.println("-->result: " + result);
                     if (result.toString().toLowerCase().contains("error"))
                         throw new Exception(result.toString());
                     total += read;

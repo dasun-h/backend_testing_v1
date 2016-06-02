@@ -404,15 +404,6 @@ public class Utils {
         return System.getProperty("os.name").toLowerCase().contains("windows 8");
     }
 
-    /**
-     * Checks if the machine is running linux
-     *
-     * @return true if running on a linux machine
-     */
-    public static boolean isLinux() {
-        String OS = System.getProperty("os.name").toLowerCase();
-        return (OS.contains("nix") || OS.contains("nux") || OS.contains("aix"));
-    }
 
     /**
      * Gets the method that called another
@@ -866,27 +857,6 @@ public class Utils {
 
         result.append(readStringFromInputStream(new BufferedReader(new InputStreamReader(response.getEntity().getContent()))).toString());
         return statusCode;
-    }
-
-    /**
-     * Method to return SQL Queries
-     *
-     * @return SQL queries as json object
-     */
-    public static JSONObject getSqlQueries() {
-
-        File queries = getResourceFile("queries.json");
-        JSONObject jsonObject = null;
-
-        try {
-            String jsonTxt = Utils.readTextFile(queries);
-            jsonObject = new JSONObject(jsonTxt);
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-        }
-
-        return jsonObject;
-
     }
 
     public static String decryptPassword(String password) {
