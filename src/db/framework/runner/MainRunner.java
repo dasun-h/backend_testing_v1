@@ -1,12 +1,15 @@
 package db.framework.runner;
 
 import com.google.gson.Gson;
+import cucumber.api.CucumberOptions;
+import cucumber.api.junit.Cucumber;
 import db.framework.utils.ProxyFilters;
 import db.framework.utils.Utils;
 import net.lightbody.bmp.BrowserMobProxy;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.client.ClientUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.runner.RunWith;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.WebDriver;
@@ -36,6 +39,8 @@ import static java.lang.Runtime.getRuntime;
 /**
  * This class handles the configuration and running of cucumber scenarios and features
  */
+@RunWith(Cucumber.class)
+@CucumberOptions(format = {"pretty", "html:target/cucumber", "json:target/cucumber.json"})
 public class MainRunner {
     /**
      * BrowserMob proxy server
@@ -494,7 +499,7 @@ public class MainRunner {
         Utils.createDirectory(logs = workspace + "/logs/", argv != null);
         Utils.createDirectory(temp = workspace + "/temp/", true);
 
-        url = getExParams("website");
+                url = getExParams("website");
         remoteOS = getExParams("remote_os");
         if (remoteOS == null) {
             System.out.println("Remote OS not specified.  Using default: Windows 7");
