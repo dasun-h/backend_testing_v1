@@ -8,7 +8,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <project.name>Backend_testing</project.name>
         <project.version>1.0-SNAPSHOT</project.version>
-        <sdt_framework.version>LATEST</sdt_framework.version>
+        <db_framework.version>LATEST</db_framework.version>
     </properties>
 
     <groupId>db</groupId>
@@ -34,18 +34,18 @@
         <dependency>
             <groupId>com.backend.db</groupId>
             <artifactId>db-framework</artifactId>
-            <version>${sdt_framework.version}</version>
+            <version>${db_framework.version}</version>
         </dependency>
         <dependency>
             <groupId>com.backend.db</groupId>
             <artifactId>db-framework</artifactId>
-            <version>${sdt_framework.version}</version>
+            <version>${db_framework.version}</version>
             <classifier>sources</classifier>
         </dependency>
         <dependency>
             <groupId>com.backend.db</groupId>
             <artifactId>db-framework</artifactId>
-            <version>${sdt_framework.version}</version>
+            <version>${db_framework.version}</version>
             <classifier>javadoc</classifier>
         </dependency>
         <dependency>
@@ -89,7 +89,7 @@
                 </configuration>
             </plugin>
 
-            <!-- include sdt-framework.jar file -->
+            <!-- include db-framework.jar file -->
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>

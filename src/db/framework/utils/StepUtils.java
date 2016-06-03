@@ -1953,7 +1953,7 @@ public abstract class StepUtils {
         try {
             //System.err.print("$");
             //System.out.print("StepUtils.execJavascript():" + script + ":");
-            //utils.ThreadWatchDog twd = new utils.ThreadWatchDog(Thread.currentThread(), 5*1000l, "StepUtils.execJavascript()", () -> new SDTRunnable(new Object[]{wd}){
+            //utils.ThreadWatchDog twd = new utils.ThreadWatchDog(Thread.currentThread(), 5*1000l, "StepUtils.execJavascript()", () -> new DBRunnable(new Object[]{wd}){
             //    public void run(){
             //        System.err.println("StepUtils.execJavascript() has timeout:");
             //        try{
@@ -2266,10 +2266,10 @@ public abstract class StepUtils {
         }
     }
 
-    public static class SDTRunnable implements Runnable {
+    public static class DBRunnable implements Runnable {
         protected Object[] m_params;
 
-        public SDTRunnable(Object[] params) {
+        public DBRunnable(Object[] params) {
             this.m_params = params;
         }
 
