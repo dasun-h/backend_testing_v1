@@ -2,7 +2,11 @@
 /*
 
 # But not these files...
+!/src
 !/pom.xml
 !/bin/
 !/target/
 
+target/cucumber.json
+target/feature-overview.html
+target/site/

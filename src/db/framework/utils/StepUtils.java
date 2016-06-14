@@ -1494,6 +1494,7 @@ public abstract class StepUtils {
             }
 
             System.out.println("...Loading " + link);
+            Thread.sleep(30);
             // start checking IE windows authentication popup
             if (ie() && MainRunner.getExParams("require_authentication") != null
                     && MainRunner.getExParams("require_authentication").equals("true"))
@@ -1817,9 +1818,6 @@ public abstract class StepUtils {
         int waitTime = MainRunner.timeout;
         try {
             new WebDriverWait(MainRunner.getWebDriver(), waitTime).until((WebDriver wDriver) -> {
-                //System.out.print("\t:" + (System.currentTimeMillis() - ts));
-                //if (safari())
-                //    utils.threadSleep(1000, null);
                 return ajaxInactive() && isPageLoaded(containText);
             });
         } catch (Exception ex) {
