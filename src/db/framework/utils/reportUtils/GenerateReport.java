@@ -16,7 +16,7 @@ public class GenerateReport {
             jsonFiles.add("cucumber.json");
 
             String jenkinsBasePath = "";
-            String buildNumber = "1";
+            String buildNumber = "75";
             String projectName = "cucumber-jvm";
             boolean skippedFails = true;
             boolean pendingFails = false;
@@ -45,7 +45,7 @@ public class GenerateReport {
             jsonFiles.add("cucumber.json");
 
             String jenkinsBasePath = "";
-            String buildNumber = "1";
+            String buildNumber = "75";
             String projectName = "cucumber-jvm";
             boolean skippedFails = true;
             boolean pendingFails = false;
