@@ -4,6 +4,4 @@
 # But not these files...
 !/src
 !/pom.xml
-!/testng.xml
 !/bin/
-!/target/

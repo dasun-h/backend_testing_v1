@@ -6,7 +6,6 @@
     </listeners>
     <test name="Reporter" annotations="JDK" preserve-order="true">
         <classes>
-            <class name="db.framework.runner.MainRunner"/>
             <class name="db.framework.utils.reportUtils.Reporter"/>
         </classes>
     </test>
