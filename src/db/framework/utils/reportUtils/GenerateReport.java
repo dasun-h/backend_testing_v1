@@ -16,8 +16,7 @@ public class GenerateReport {
             jsonFiles.add("cucumber.json");
 
             String jenkinsBasePath = "";
-            String buildNumber = "75";
-            String projectName = "cucumber-jvm";
+            String projectName = "DB-Tester";
             boolean skippedFails = true;
             boolean pendingFails = false;
             boolean undefinedFails = true;
@@ -31,7 +30,6 @@ public class GenerateReport {
             configuration.setParallelTesting(parallelTesting);
             configuration.setJenkinsBasePath(jenkinsBasePath);
             configuration.setRunWithJenkins(runWithJenkins);
-            configuration.setBuildNumber(buildNumber);
             ReportBuilder reportBuilder = new ReportBuilder(jsonFiles, configuration);
             reportBuilder.generateReports();
         }catch(Exception e){
@@ -45,8 +43,7 @@ public class GenerateReport {
             jsonFiles.add("cucumber.json");
 
             String jenkinsBasePath = "";
-            String buildNumber = "75";
-            String projectName = "cucumber-jvm";
+            String projectName = "DB-Tester";
             boolean skippedFails = true;
             boolean pendingFails = false;
             boolean undefinedFails = true;
@@ -60,7 +57,6 @@ public class GenerateReport {
             configuration.setParallelTesting(parallelTesting);
             configuration.setJenkinsBasePath(jenkinsBasePath);
             configuration.setRunWithJenkins(runWithJenkins);
-            configuration.setBuildNumber(buildNumber);
             ReportBuilder reportBuilder = new ReportBuilder(jsonFiles, configuration);
             reportBuilder.generateReports();
         } catch (Exception e) {

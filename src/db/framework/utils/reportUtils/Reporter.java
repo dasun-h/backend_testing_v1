@@ -8,11 +8,13 @@ import org.junit.runner.RunWith;
 import org.testng.annotations.Test;
 
 @RunWith(Cucumber.class)
-@CucumberOptions(strict = false, features = "src/db/projects/BackendTesting/features/", format = { "pretty", "html:target/site/cucumber-pretty", "json:target/cucumber.json" }, glue = {"db.shared.steps"}, tags = { "~@ignore" })
+@CucumberOptions(features = "src/db/projects/BackendTesting/features/", plugin = {"pretty", "html:target/site/cucumber-pretty",
+        "json:target/cucumber.json"}, glue = {"db.shared.steps"}, tags = {"@scenario1"})
 public class Reporter extends AbstractTestNGCucumberTests {
 
     @Test(groups = "db-testng", description = "Example of using TestNGCucumberRunner to invoke Cucumber")
     public void runCukes() {
         new TestNGCucumberRunner(getClass()).runCukes();
     }
+
 }

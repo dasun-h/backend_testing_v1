@@ -1494,14 +1494,11 @@ public abstract class StepUtils {
             }
 
             System.out.println("...Loading " + link);
-            Thread.sleep(30);
             // start checking IE windows authentication popup
             if (ie() && MainRunner.getExParams("require_authentication") != null
                     && MainRunner.getExParams("require_authentication").equals("true"))
                 MainRunner.authenticationIeInit();
-            //utils.ThreadWatchDog twd = new utils.ThreadWatchDog(null, 60000, "ThreadWatchDog:visit(" + link + ")", () -> stopPageLoad());
             MainRunner.getWebDriver().get(link);
-            //twd.interrupt();
             waitForPageReady();
         } catch (Exception ex) {
             if (MainRunner.isDebug())

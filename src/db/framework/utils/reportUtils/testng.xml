@@ -4,7 +4,7 @@
     <listeners>
         <listener class-name="db.framework.utils.reportUtils.TestNGExecutionListener"></listener>
     </listeners>
-    <test name="Reporter" annotations="JDK" preserve-order="true">
+    <test name="backend testing" annotations="JDK" preserve-order="true">
         <classes>
             <class name="db.framework.utils.reportUtils.Reporter"/>
         </classes>

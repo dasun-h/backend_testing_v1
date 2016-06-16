@@ -400,7 +400,7 @@ public class MainRunner {
                 driver = new FirefoxDriver(capabilities);
                 break;
         }
-        if (!MainRunner.browser.equals("safari") && !MainRunner.remoteOS.equals("Linux")) {
+        if (!MainRunner.browser.equals("safari")) {
             WebDriver.Timeouts to = driver.manage().timeouts();
             to.pageLoadTimeout(30, TimeUnit.SECONDS);
             to.setScriptTimeout(30, TimeUnit.SECONDS);
