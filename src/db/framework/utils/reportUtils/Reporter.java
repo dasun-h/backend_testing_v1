@@ -1,13 +1,21 @@
 package db.framework.utils.reportUtils;
 
+import com.github.mkolisnyk.cucumber.runner.ExtendedCucumber;
+import com.github.mkolisnyk.cucumber.runner.ExtendedCucumberOptions;
 import cucumber.api.CucumberOptions;
-import cucumber.api.junit.Cucumber;
 import cucumber.api.testng.AbstractTestNGCucumberTests;
 import cucumber.api.testng.TestNGCucumberRunner;
 import org.junit.runner.RunWith;
 import org.testng.annotations.Test;
 
-@RunWith(Cucumber.class)
+@RunWith(ExtendedCucumber.class)
+@ExtendedCucumberOptions(jsonReport = "target/cucumber.json",
+        retryCount = 3,
+        detailedReport = true,
+        detailedAggregatedReport = true,
+        overviewReport = true,
+        toPDF = true,
+        outputFolder = "target")
 @CucumberOptions(features = "src/db/projects/BackendTesting/features/", plugin = {"pretty", "html:target/site/cucumber-pretty",
         "json:target/cucumber.json", "pretty:target/cucumber-pretty.txt",
         "usage:target/cucumber-usage.json", "junit:target/cucumber-results.xml"}, glue = {"db.shared.steps"}, tags = {"@scenario1"})
