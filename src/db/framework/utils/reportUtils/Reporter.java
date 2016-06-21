@@ -3,9 +3,14 @@ package db.framework.utils.reportUtils;
 import com.github.mkolisnyk.cucumber.runner.ExtendedCucumber;
 import com.github.mkolisnyk.cucumber.runner.ExtendedCucumberOptions;
 import cucumber.api.CucumberOptions;
+import cucumber.api.Scenario;
 import cucumber.api.testng.AbstractTestNGCucumberTests;
 import cucumber.api.testng.TestNGCucumberRunner;
+import db.framework.runner.MainRunner;
 import org.junit.runner.RunWith;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 @RunWith(ExtendedCucumber.class)
@@ -26,4 +31,12 @@ public class Reporter extends AbstractTestNGCucumberTests {
         new TestNGCucumberRunner(getClass()).runCukes();
     }
 
+    @AfterMethod
+    public void tearDown(Scenario scenario) {
+        if (scenario.isFailed()) {
+            final byte[] screenshot = ((TakesScreenshot) MainRunner.getWebDriver())
+                    .getScreenshotAs(OutputType.BYTES);
+            scenario.embed(screenshot, "image/png"); //stick it in the report
+        }
+    }
 }
