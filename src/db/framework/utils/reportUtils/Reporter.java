@@ -3,15 +3,20 @@ package db.framework.utils.reportUtils;
 import com.github.mkolisnyk.cucumber.runner.ExtendedCucumber;
 import com.github.mkolisnyk.cucumber.runner.ExtendedCucumberOptions;
 import cucumber.api.CucumberOptions;
-import cucumber.api.Scenario;
 import cucumber.api.testng.AbstractTestNGCucumberTests;
 import cucumber.api.testng.TestNGCucumberRunner;
 import db.framework.runner.MainRunner;
+import org.apache.commons.io.FileUtils;
 import org.junit.runner.RunWith;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
+import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
+
+import java.io.File;
+import java.io.IOException;
+
 
 @RunWith(ExtendedCucumber.class)
 @ExtendedCucumberOptions(jsonReport = "target/cucumber.json",
@@ -31,12 +36,13 @@ public class Reporter extends AbstractTestNGCucumberTests {
         new TestNGCucumberRunner(getClass()).runCukes();
     }
 
-    @AfterMethod
-    public void tearDown(Scenario scenario) {
-        if (scenario.isFailed()) {
-            final byte[] screenshot = ((TakesScreenshot) MainRunner.getWebDriver())
-                    .getScreenshotAs(OutputType.BYTES);
-            scenario.embed(screenshot, "image/png"); //stick it in the report
+   @AfterMethod
+   public void takeScreenShotOnFailure(ITestResult testResult) throws IOException {
+        if (testResult.getStatus() == ITestResult.FAILURE) {
+            System.out.println(testResult.getStatus());
+            File scrFile = ((TakesScreenshot) MainRunner.getWebDriver()).getScreenshotAs(OutputType.FILE);
+            FileUtils.copyFile(scrFile, new File("target/img_cucumber_jvm.jpg"));
         }
     }
+
 }
