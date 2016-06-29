@@ -7,6 +7,7 @@ import net.lightbody.bmp.BrowserMobProxy;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.client.ClientUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.WebDriver;
@@ -17,11 +18,13 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.ie.InternetExplorerDriver;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.safari.SafariDriver;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,6 +45,11 @@ public class MainRunner {
      */
     public static BrowserMobProxy browsermobServer = null;
 
+    /**
+     * Will be true if executing through saucelabs. Checks for valid saucelabs URL in "saucelabs" env variable
+     */
+
+    public static boolean useSaucelabs;
 
     /**
      * Contains OS to use when executing on saucelabs as given in "remote_os" env variable
@@ -79,7 +87,7 @@ public class MainRunner {
     /**
      * Browser to use as given in "browser" env variable. Default firefox.
      */
-    public static String browser = "firefox";
+    public static String browser;
 
     /**
      * Version of browser to use as given in "browser_version" env variable
@@ -116,7 +124,6 @@ public class MainRunner {
      */
     public static int timeout = 30; // set the general default timeout to 30 seconds
 
-
     /**
      * List containing URL's that have been visited
      */
@@ -134,6 +141,11 @@ public class MainRunner {
      * Whether the proxy is disabled
      */
     public static boolean disableProxy = true;
+
+    /**
+     * The Sauce Labs URL being used
+     */
+    public static String sauceUrl = "http://ztaf:39f182ee-8618-4ef7-965e-b5679b788fe2@ondemand.saucelabs.com:80/wd/hub";
 
     private static WebDriver driver = null;
     private static long ieAuthenticationTs = System.currentTimeMillis() - 10000; // set authentication checking interval out of range
@@ -176,34 +188,33 @@ public class MainRunner {
      */
     public static WebDriver getWebDriver() {
         try {
-            if (MainRunner.driver != null) {
-                currentURL = MainRunner.getCurrentUrl();
+            if (driver != null) {
+                currentURL = getCurrentUrl();
                 if (!URLStack.get(URLStack.size() - 1).equals(currentURL))
                     URLStack.add(currentURL);
             }
         } catch (Exception e) {
         }
 
-        if (MainRunner.driver != null)
-            return MainRunner.driver;
+        if (driver != null)
+            return driver;
 
         for (int i = 0; i < 2; i++) {
-            if (MainRunner.disableProxy) {
-                initDriver(null);
+            if (disableProxy) {
+                driver = initDriver(null);
             } else {
-                initProxyServer();
+                driver = initDriverWithProxy();
             }
 
             try {
-                if (MainRunner.browser.equals("safari")) {
+                if (browser.equals("safari")) {
                     Dimension dimension = new Dimension(1280, 1024);
-                    MainRunner.driver.manage().window().setSize(dimension);
+                    driver.manage().window().setSize(dimension);
                 } else
-                    MainRunner.driver.manage().window().maximize();
-
-                String window_size = MainRunner.driver.manage().window().getSize().toString();
+                    driver.manage().window().maximize();
+                String window_size = driver.manage().window().getSize().toString();
                 System.out.println("Init driver: browser window size = " + window_size);
-                return MainRunner.driver;
+                return driver;
             } catch (Exception ex) {
                 System.err.println("-->Failed initialized driver:retry" + i + ":" + ex.getMessage());
                 Utils.threadSleep(2000, null);
@@ -216,6 +227,7 @@ public class MainRunner {
         // to get rid of invalid lint errors
         return new ChromeDriver();
     }
+
 
     /**
      * Retrieves an environment variable OR ex_param
@@ -359,47 +371,56 @@ public class MainRunner {
         }
     }
 
-    private static void initDriver(DesiredCapabilities capabilities) {
+    private static WebDriver initDriver(DesiredCapabilities capabilities) {
         if (capabilities == null)
             capabilities = initCapabilities();
-        switch (MainRunner.browser) {
-            case "ie":
-                capabilities.setCapability("version", browserVersion);
-                File file = new File(MainRunner.workspace + "src/db/framework/selenium_drivers/IEDriverServer.exe");
-                if (!file.exists())
-                    file = new File(MainRunner.workspace + "db/framework/selenium_drivers/IEDriverServer.exe");
-                System.setProperty("webdriver.ie.driver", file.getAbsolutePath());
-                driver = new InternetExplorerDriver(capabilities);
-                break;
-            case "chrome":
-                capabilities.setCapability("version", browserVersion);
-                String fileName = "chromedriver.exe";
-                if (Utils.isOSX())
-                    fileName = "chromedriver";
-                file = new File(MainRunner.workspace + "src/db/framework/selenium_drivers/" + fileName);
-                if (!file.exists())
-                    file = new File(MainRunner.workspace + "db/framework/selenium_drivers/" + fileName);
-                System.setProperty("webdriver.chrome.driver", file.getAbsolutePath());
-                driver = new ChromeDriver(capabilities);
-                break;
-            case "safari":
-                capabilities.setCapability("version", browserVersion);
-                // safari driver is not stable, retry 3 times
-                int count = 0;
-                while (driver == null && count++ < 3)
-                    try {
-                        driver = new SafariDriver(capabilities);
-                    } catch (Exception e) {
-                        Utils.threadSleep(5000, null);
-                    }
-                break;
-            case "edge":
-                driver = new EdgeDriver(capabilities);
-                break;
-            default:
-                driver = new FirefoxDriver(capabilities);
-                break;
+        if (!useSaucelabs) {
+            return new ChromeDriver(capabilities);
+        } else if (!useSaucelabs) {
+            switch (MainRunner.browser) {
+                case "ie":
+                    capabilities.setCapability("version", browserVersion);
+                    File file = new File(MainRunner.workspace + "src/db/framework/selenium_drivers/IEDriverServer.exe");
+                    if (!file.exists())
+                        file = new File(MainRunner.workspace + "db/framework/selenium_drivers/IEDriverServer.exe");
+                    System.setProperty("webdriver.ie.driver", file.getAbsolutePath());
+                    driver = new InternetExplorerDriver(capabilities);
+                    break;
+                case "chrome":
+                    capabilities.setCapability("version", browserVersion);
+                    String fileName = "chromedriver.exe";
+                    if (Utils.isOSX())
+                        fileName = "chromedriver";
+                    file = new File(MainRunner.workspace + "src/db/framework/selenium_drivers/" + fileName);
+                    if (!file.exists())
+                        file = new File(MainRunner.workspace + "db/framework/selenium_drivers/" + fileName);
+                    System.setProperty("webdriver.chrome.driver", file.getAbsolutePath());
+                    driver = new ChromeDriver(capabilities);
+                    break;
+                case "safari":
+                    capabilities.setCapability("version", browserVersion);
+                    // safari driver is not stable, retry 3 times
+                    int count = 0;
+                    while (driver == null && count++ < 3)
+                        try {
+                            driver = new SafariDriver(capabilities);
+                        } catch (Exception e) {
+                            Utils.threadSleep(5000, null);
+                        }
+                    break;
+                case "edge":
+                    driver = new EdgeDriver(capabilities);
+                    break;
+                default:
+                    driver = new FirefoxDriver(capabilities);
+                    break;
+            }
         }
+        if (useSaucelabs)
+            driver = initSauceLabs(capabilities);
+
+        Assert.assertNotNull("Driver should have been initialized by now", driver);
+
         if (!MainRunner.browser.equals("safari")) {
             WebDriver.Timeouts to = driver.manage().timeouts();
             to.pageLoadTimeout(30, TimeUnit.SECONDS);
@@ -407,6 +428,39 @@ public class MainRunner {
         }
 
         Utils.PageHangWatchDog.init();
+        return driver;
+    }
+
+    private static WebDriver initSauceLabs(DesiredCapabilities capabilities) {
+        try {
+            // remove quoted chars
+            remoteOS = remoteOS.replace("\"", "");
+            remoteOS = remoteOS.replace("'", "");
+            capabilities.setCapability("platform", remoteOS);
+            capabilities.setCapability("version", browserVersion);
+            capabilities.setCapability("idleTimeout", 240);
+            capabilities.setCapability("maxDuration", 3600);
+            // need to increase res or we get tablet layout
+            // not supported on win10 and mac OSX El Capitan (10.11)
+            if (!remoteOS.matches("^Windows 10|(.*?)10.11$")) {
+                capabilities.setCapability("screenResolution", "1280x1024");
+            }
+            if (MainRunner.browser.equals("safari")) {
+                // safari driver is not stable, retry 3 times
+                int count = 0;
+                while (count++ < 3)
+                    try {
+                        return new RemoteWebDriver(new URL(sauceUrl), capabilities);
+                    } catch (Error | Exception e) {
+                        Utils.threadSleep(5000, null);
+                    }
+            } else
+                return new RemoteWebDriver(new URL(sauceUrl), capabilities);
+
+        } catch (Exception e) {
+            System.err.println("Could not create remove web driver: " + e);
+        }
+        return null;
     }
 
     private static String defaultBrowserVersion() {
@@ -438,7 +492,7 @@ public class MainRunner {
         }
     }
 
-    private static void initProxyServer() {
+    public static WebDriver initDriverWithProxy() {
         if (browsermobServer != null) {
             System.err.println("-->Aborting prev proxy server:" + browsermobServer.getPort());
             try {
@@ -472,10 +526,11 @@ public class MainRunner {
         Proxy seleniumProxy = ClientUtil.createSeleniumProxy(browsermobServer);
         DesiredCapabilities capabilities = initCapabilities();
         capabilities.setCapability(CapabilityType.PROXY, seleniumProxy);
-        initDriver(capabilities);
+        WebDriver driver = initDriver(capabilities);
         browsermobServer.newHar(browsermobServerHarTs);
         browsermobServer.addRequestFilter(new ProxyFilters.ProxyRequestFilter(url));
         browsermobServer.addResponseFilter(new ProxyFilters.ProxyResponseFilter());
+        return driver;
     }
 
     /**
@@ -502,7 +557,7 @@ public class MainRunner {
         }
         browser = getExParams("browser") != null ? getExParams("browser") : browser;
         browserVersion = getExParams("browser_version") != null ? getExParams("browser_version") : defaultBrowserVersion();
-        System.out.println("-->Testing " + url + " with " + browser + " " + browserVersion);
+        System.out.println("-->Testing " + url + " with " + browser + " " + browserVersion + (useSaucelabs ? " on Sauce Labs" : ""));
         new AuthenticationDialog();
 
         System.out.println("\n\n");
@@ -516,6 +571,10 @@ public class MainRunner {
         if (tagCollection)
             System.out.println("tag_collection is enabled");
 
+
+        // use sauce labs
+        sauceUrl = getExParams("saucelabs");
+        useSaucelabs = sauceUrl != null && sauceUrl.contains(".saucelabs.com");
 
         // close the test browser at scenario exit
         env_val = getExParams("timeout");
@@ -645,7 +704,11 @@ public class MainRunner {
     private static void close() {
         if (MainRunner.browser.equals("none"))
             return;
-        else if (MainRunner.closeBrowserAtExit) {
+        if (useSaucelabs) {
+            if (driver instanceof RemoteWebDriver)
+                System.out.println("Link to your job: https://saucelabs.com/jobs/" + ((RemoteWebDriver) driver).getSessionId());
+            driverQuit();
+        } else if (MainRunner.closeBrowserAtExit) {
             System.out.println("Closing driver...");
             if (MainRunner.driver != null)
                 driverQuit();
