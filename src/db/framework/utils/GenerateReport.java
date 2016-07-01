@@ -1,4 +1,4 @@
-package db.framework.utils.reportUtils;
+package db.framework.utils;
 
 import net.masterthought.cucumber.Configuration;
 import net.masterthought.cucumber.ReportBuilder;

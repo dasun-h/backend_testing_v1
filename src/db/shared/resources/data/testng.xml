@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="backend_testing" verbose="1" thread-count="2" parallel="tests" configfailurepolicy="continue">
+    <parameter name="saucelabs" value="http://ztaf:39f182ee-8618-4ef7-965e-b5679b788fe2@ondemand.saucelabs.com:80/wd/hub"/>
+    <parameter name="os" value="Windows 8"/>
+    <parameter name="ori_browser" value="firefox"/>
+    <parameter name="browserVersion" value="45.0"/>
+    <listeners>
+        <listener class-name="db.framework.utils.TestNGExecutionListener"></listener>
+    </listeners>
+    <test name="backend testing" annotations="JDK" preserve-order="true">
+        <classes>
+            <class name="db.framework.runner.MainRunner"/>
+        </classes>
+    </test>
+</suite>

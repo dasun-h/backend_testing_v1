@@ -1,4 +1,4 @@
-package db.framework.utils.reportUtils;
+package db.framework.utils;
 
 import db.framework.runner.MainRunner;
 import org.testng.IExecutionListener;

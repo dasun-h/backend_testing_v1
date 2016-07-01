@@ -1,16 +1,21 @@
 package db.framework.runner;
 
+import com.github.mkolisnyk.cucumber.runner.ExtendedCucumber;
+import com.github.mkolisnyk.cucumber.runner.ExtendedCucumberOptions;
 import com.google.gson.Gson;
+import cucumber.api.CucumberOptions;
+import cucumber.api.testng.AbstractTestNGCucumberTests;
+import cucumber.api.testng.TestNGCucumberRunner;
 import db.framework.utils.ProxyFilters;
 import db.framework.utils.Utils;
 import net.lightbody.bmp.BrowserMobProxy;
 import net.lightbody.bmp.BrowserMobProxyServer;
 import net.lightbody.bmp.client.ClientUtil;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
-import org.openqa.selenium.Dimension;
-import org.openqa.selenium.Proxy;
-import org.openqa.selenium.WebDriver;
+import org.junit.runner.RunWith;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.edge.EdgeDriver;
@@ -20,6 +25,11 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.safari.SafariDriver;
+import org.testng.ITestResult;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +49,18 @@ import static java.lang.Runtime.getRuntime;
 /**
  * This class handles the configuration and running of cucumber scenarios and features
  */
-public class MainRunner {
+@RunWith(ExtendedCucumber.class)
+@ExtendedCucumberOptions(jsonReport = "target/cucumber.json",
+        retryCount = 3,
+        detailedReport = true,
+        detailedAggregatedReport = true,
+        overviewReport = true,
+        toPDF = true,
+        outputFolder = "target")
+@CucumberOptions(features = "src/db/projects/BackendTesting/features/", plugin = {"pretty", "html:target/site/cucumber-pretty",
+        "json:target/cucumber.json", "pretty:target/cucumber-pretty.txt",
+        "usage:target/cucumber-usage.json", "junit:target/cucumber-results.xml"}, glue = {"db.shared.steps"}, tags = {"@scenario1"})
+public class MainRunner extends AbstractTestNGCucumberTests {
     /**
      * BrowserMob proxy server
      */
@@ -145,7 +166,7 @@ public class MainRunner {
     /**
      * The Sauce Labs URL being used
      */
-    public static String sauceUrl = "http://ztaf:39f182ee-8618-4ef7-965e-b5679b788fe2@ondemand.saucelabs.com:80/wd/hub";
+    public static String sauceUrl;
 
     private static WebDriver driver = null;
     private static long ieAuthenticationTs = System.currentTimeMillis() - 10000; // set authentication checking interval out of range
@@ -168,8 +189,8 @@ public class MainRunner {
      */
     public static void resetDriver(boolean quit) {
         if (quit)
-            MainRunner.driver.quit();
-        MainRunner.driver = null;
+            driver.quit();
+        driver = null;
     }
 
     /**
@@ -178,7 +199,7 @@ public class MainRunner {
      * @return true if a valid web driver is active
      */
     public static Boolean driverInitialized() {
-        return MainRunner.driver == null;
+        return driver == null;
     }
 
     /**
@@ -285,17 +306,17 @@ public class MainRunner {
         if (scenarios == null)
             return scenarioList;
         scenarios = scenarios.trim();
-        String delimit = ".feature:";
+        System.out.println("-> Parsing env scenarios:" + scenarios);
+        String delimit = ".feature";
         int i = 0, end = scenarios.indexOf(delimit);
         while (i < scenarios.length()) {
-            end = scenarios.indexOf(' ', end);
+            end = scenarios.indexOf(' ', end + 1);
             if (end == -1)
                 end = scenarios.length();
             String scenarioPath = scenarios.substring(i, end).trim();
             System.out.println("->" + scenarioPath);
             scenarioList.add(scenarioPath);
             i = end;
-            end = scenarios.indexOf(delimit, i);
         }
 
         Collections.sort(scenarioList);
@@ -314,14 +335,38 @@ public class MainRunner {
             if (!path.equals("")) {
                 File featureFile = new File(path);
                 if (!(featureFile.exists() || featureFile.getAbsoluteFile().exists())) {
-                    System.err.println("File not found: " + path);
+                    System.out.println("File not found: " + path);
                     path = workSpace + "/" + path;
                 }
                 featureScenarios = new Gson().fromJson(Utils.gherkinTojson(false, path), ArrayList.class);
             }
             findScenario(featureScenarios, path, line);
-            features.putIfAbsent(path, 0);
         }
+
+        // condense any duplicate feature files
+        HashMap<String, ArrayList<String>> featureLines = new HashMap<>();
+        for (String scenario : scenarioList) {
+            int lineIndex = scenario.lastIndexOf(':');
+            if (lineIndex == -1)
+                continue;
+            String scenarioPath = scenario.substring(0, lineIndex).trim();
+            String lineNum = scenario.substring(lineIndex + 1);
+            ArrayList<String> lines = featureLines.get(scenarioPath);
+            if (lines == null) {
+                lines = new ArrayList<>();
+                featureLines.put(scenarioPath, lines);
+            }
+            lines.add(lineNum);
+        }
+
+        scenarioList.removeAll(scenarioList.stream()
+                .filter(str -> str.contains(":"))
+                .collect(Collectors.toList()));
+
+        scenarioList.addAll(featureLines.keySet().stream()
+                .map((key) -> key + ":" + StringUtils.join(featureLines.get(key), ":"))
+                .collect(Collectors.toList()));
+
         return scenarioList;
     }
 
@@ -329,9 +374,9 @@ public class MainRunner {
      * Closes a firefox alert if present
      */
     public static void closeAlert() {
-        if (MainRunner.driver != null) {
+        if (driver != null) {
             try {
-                MainRunner.driver.switchTo().alert().accept();
+                driver.switchTo().alert().accept();
             } catch (org.openqa.selenium.NoAlertPresentException e) {
                 System.out.println("No alert to close");
             }
@@ -339,7 +384,7 @@ public class MainRunner {
     }
 
     private static DesiredCapabilities disabledProxyCap(DesiredCapabilities desiredCap) {
-        if (MainRunner.disableProxy) {
+        if (disableProxy) {
             desiredCap.setCapability(CapabilityType.ForSeleniumServer.AVOIDING_PROXY, true);
             desiredCap.setCapability(CapabilityType.ForSeleniumServer.PROXYING_EVERYTHING, false);
         }
@@ -347,7 +392,7 @@ public class MainRunner {
     }
 
     private static DesiredCapabilities initCapabilities() {
-        switch (MainRunner.browser) {
+        switch (browser) {
             case "ie":
                 DesiredCapabilities ieCapabilities = DesiredCapabilities.internetExplorer();
                 ieCapabilities.setCapability(InternetExplorerDriver.INITIAL_BROWSER_URL, true);
@@ -363,7 +408,9 @@ public class MainRunner {
                 capabilities.setCapability(ChromeOptions.CAPABILITY, chrome);
                 return disabledProxyCap(capabilities);
             case "safari":
-                return disabledProxyCap(DesiredCapabilities.safari());
+                DesiredCapabilities sfCapabilities = DesiredCapabilities.safari();
+                sfCapabilities.setCapability("unexpectedAlertBehaviour", "accept");
+                return disabledProxyCap(sfCapabilities);
             case "edge":
                 return DesiredCapabilities.edge();
             default:
@@ -377,12 +424,12 @@ public class MainRunner {
         if (!useSaucelabs) {
             return new ChromeDriver(capabilities);
         } else if (!useSaucelabs) {
-            switch (MainRunner.browser) {
+            switch (browser) {
                 case "ie":
                     capabilities.setCapability("version", browserVersion);
-                    File file = new File(MainRunner.workspace + "src/db/framework/selenium_drivers/IEDriverServer.exe");
+                    File file = new File(workspace + "src/db/framework/selenium_drivers/IEDriverServer.exe");
                     if (!file.exists())
-                        file = new File(MainRunner.workspace + "db/framework/selenium_drivers/IEDriverServer.exe");
+                        file = new File(workspace + "db/framework/selenium_drivers/IEDriverServer.exe");
                     System.setProperty("webdriver.ie.driver", file.getAbsolutePath());
                     driver = new InternetExplorerDriver(capabilities);
                     break;
@@ -391,9 +438,9 @@ public class MainRunner {
                     String fileName = "chromedriver.exe";
                     if (Utils.isOSX())
                         fileName = "chromedriver";
-                    file = new File(MainRunner.workspace + "src/db/framework/selenium_drivers/" + fileName);
+                    file = new File(workspace + "src/db/framework/selenium_drivers/" + fileName);
                     if (!file.exists())
-                        file = new File(MainRunner.workspace + "db/framework/selenium_drivers/" + fileName);
+                        file = new File(workspace + "db/framework/selenium_drivers/" + fileName);
                     System.setProperty("webdriver.chrome.driver", file.getAbsolutePath());
                     driver = new ChromeDriver(capabilities);
                     break;
@@ -421,7 +468,7 @@ public class MainRunner {
 
         Assert.assertNotNull("Driver should have been initialized by now", driver);
 
-        if (!MainRunner.browser.equals("safari")) {
+        if (!browser.equals("safari")) {
             WebDriver.Timeouts to = driver.manage().timeouts();
             to.pageLoadTimeout(30, TimeUnit.SECONDS);
             to.setScriptTimeout(30, TimeUnit.SECONDS);
@@ -445,7 +492,7 @@ public class MainRunner {
             if (!remoteOS.matches("^Windows 10|(.*?)10.11$")) {
                 capabilities.setCapability("screenResolution", "1280x1024");
             }
-            if (MainRunner.browser.equals("safari")) {
+            if (browser.equals("safari")) {
                 // safari driver is not stable, retry 3 times
                 int count = 0;
                 while (count++ < 3)
@@ -463,74 +510,32 @@ public class MainRunner {
         return null;
     }
 
-    private static String defaultBrowserVersion() {
-        switch (MainRunner.browser) {
-            case "ie":
-                return "11.0";
-            case "chrome":
-                return "49.0";
-            case "edge":
-                return "20.10240";
-            case "safari":
-                String version;
-                if (remoteOS == null)
-                    version = "9.0";
-                else if (remoteOS.contains("10.11"))
-                    version = "9.0";
-                else if (remoteOS.contains("10.10"))
-                    version = "8.0";
-                else if (remoteOS.contains("10.9"))
-                    version = "7.0";
-                else if (remoteOS.contains("10.8"))
-                    version = "6.0";
-                else
-                    version = "0";
-                return version;
-            default:
-                // assume firefox
-                return "45.0";
-        }
+    @Parameters({"ori_browser"})
+    @BeforeTest
+    public static String retrieveBrowser(String ori_browser) throws InterruptedException {
+        browser = ori_browser;
+        System.out.println(browser + " browser selected");
+        return browser;
     }
 
-    public static WebDriver initDriverWithProxy() {
-        if (browsermobServer != null) {
-            System.err.println("-->Aborting prev proxy server:" + browsermobServer.getPort());
-            try {
-                browsermobServer.abort();
-            } catch (Exception ex) {
-                System.err.println("-->Failed to abort prev proxy server:" + browsermobServer.getPort());
-            }
-        }
+    public static String selectBrowser() throws InterruptedException {
+        String new_browser = retrieveBrowser(browser);
+        return new_browser;
+    }
 
-        System.out.print("Initializing proxy server...");
-        int port = 7000;
-        boolean found = false;
-        for (int i = 0; i < 10; i++) {
-            try {
-                browsermobServer = new BrowserMobProxyServer();
-                browsermobServer.start(port);
-                System.out.println("using port " + port);
-                found = true;
-                break;
-            } catch (Exception ex) {
-                System.out.println("port " + port + " is in use:" + ex.getMessage());
-                port++;
-            }
-        }
-        if (!found) {
-            System.out.println("Cannot find open port for proxy server");
-            System.out.println("Abort run.");
-            System.exit(-1);
-        }
+    @Test(groups = "db-testng", description = "Example of using TestNGCucumberRunner to invoke Cucumber")
+    public void runCukes() {
+        new TestNGCucumberRunner(getClass()).runCukes();
+    }
 
-        Proxy seleniumProxy = ClientUtil.createSeleniumProxy(browsermobServer);
-        DesiredCapabilities capabilities = initCapabilities();
-        capabilities.setCapability(CapabilityType.PROXY, seleniumProxy);
-        WebDriver driver = initDriver(capabilities);
-        browsermobServer.newHar(browsermobServerHarTs);
-        browsermobServer.addRequestFilter(new ProxyFilters.ProxyRequestFilter(url));
-        browsermobServer.addResponseFilter(new ProxyFilters.ProxyResponseFilter());
-        return driver;
+
+    @AfterMethod
+    public void takeScreenShotOnFailure(ITestResult testResult) throws IOException {
+        if (testResult.getStatus() == ITestResult.FAILURE) {
+            System.out.println(testResult.getStatus());
+            File scrFile = ((TakesScreenshot) getWebDriver()).getScreenshotAs(OutputType.FILE);
+            FileUtils.copyFile(scrFile, new File("target/img_cucumber_jvm.jpg"));
+        }
     }
 
     /**
@@ -555,7 +560,7 @@ public class MainRunner {
             System.out.println("Remote OS not specified.  Using default: Windows 7");
             remoteOS = "Windows 7";
         }
-        browser = getExParams("browser") != null ? getExParams("browser") : browser;
+        browser = getExParams("browser") != null ? getExParams("browser") : selectBrowser();
         browserVersion = getExParams("browser_version") != null ? getExParams("browser_version") : defaultBrowserVersion();
         System.out.println("-->Testing " + url + " with " + browser + " " + browserVersion + (useSaucelabs ? " on Sauce Labs" : ""));
         new AuthenticationDialog();
@@ -573,15 +578,15 @@ public class MainRunner {
 
 
         // use sauce labs
-        sauceUrl = getExParams("saucelabs");
+        sauceUrl = getExParams("saucelabs") != null ? getExParams("saucelabs") : sauceUrl;
         useSaucelabs = sauceUrl != null && sauceUrl.contains(".saucelabs.com");
 
         // close the test browser at scenario exit
         env_val = getExParams("timeout");
         if (env_val != null) {
             int timeout = Integer.parseInt(env_val);
-            if (timeout > 0 && timeout != MainRunner.timeout)
-                MainRunner.timeout = timeout;
+            if (timeout > 0 && timeout != timeout)
+                timeout = timeout;
         }
 
         ArrayList<String> featureScenarios = getFeatureScenarios();
@@ -650,14 +655,14 @@ public class MainRunner {
         if (project != null)
             System.out.println("-->Current project: " + project);
         System.out.println("-->Running with parameters:\n" + featureScenarios);
-        if (MainRunner.workspace != null && !MainRunner.workspace.isEmpty())
+        if (workspace != null && !workspace.isEmpty())
             for (int i = 0; i < featureScenarios.size(); i++) {
                 String value = featureScenarios.get(i);
                 if (value.equals("--tags"))
                     break;
                 File featureFile = new File(value);
                 if (!(featureFile.exists() || featureFile.getAbsoluteFile().exists()))
-                    value = MainRunner.workspace + "/" + value;
+                    value = workspace + "/" + value;
                 featureScenarios.set(i, value);
             }
 
@@ -670,6 +675,12 @@ public class MainRunner {
         featureScenarios.add("db.shared.steps");
         featureScenarios.add("--plugin");
         featureScenarios.add("html:logs");
+
+        System.out.println("-->Testing " + url + " using " + remoteOS + ":" + browser + " " + browserVersion + (useSaucelabs ? " on Sauce Labs" : ""));
+
+        driver = getWebDriver();
+
+        new AuthenticationDialog();
 
         try {
             runStatus = cucumber.api.cli.Main.run(featureScenarios.toArray(new String[featureScenarios.size()]),
@@ -684,54 +695,138 @@ public class MainRunner {
         }
     }
 
+    private static String defaultBrowserVersion() {
+        switch (browser) {
+            case "ie":
+                return "11.0";
+            case "chrome":
+                return "51.0";
+            case "edge":
+                return "20.10240";
+            case "safari":
+                String version;
+                if (remoteOS == null)
+                    version = "9.0";
+                else if (remoteOS.contains("10.11"))
+                    version = "9.0";
+                else if (remoteOS.contains("10.10"))
+                    version = "8.0";
+                else if (remoteOS.contains("10.9"))
+                    version = "7.0";
+                else if (remoteOS.contains("10.8"))
+                    version = "6.0";
+                else
+                    version = "0";
+                return version;
+            default:
+                // assume firefox
+                return "45.0";
+        }
+    }
+
+    public static WebDriver initDriverWithProxy() {
+        if (browsermobServer != null) {
+            System.err.println("-->Aborting prev proxy server:" + browsermobServer.getPort());
+            try {
+                browsermobServer.abort();
+            } catch (Exception ex) {
+                System.err.println("-->Failed to abort prev proxy server:" + browsermobServer.getPort());
+            }
+        }
+
+        System.out.print("Initializing proxy server...");
+        int port = 7000;
+        boolean found = false;
+        for (int i = 0; i < 10; i++) {
+            try {
+                browsermobServer = new BrowserMobProxyServer();
+                browsermobServer.start(port);
+                System.out.println("using port " + port);
+                found = true;
+                break;
+            } catch (Exception ex) {
+                System.out.println("port " + port + " is in use:" + ex.getMessage());
+                port++;
+            }
+        }
+        if (!found) {
+            System.out.println("Cannot find open port for proxy server");
+            System.out.println("Abort run.");
+            System.exit(-1);
+        }
+
+        Proxy seleniumProxy = ClientUtil.createSeleniumProxy(browsermobServer);
+        DesiredCapabilities capabilities = initCapabilities();
+        capabilities.setCapability(CapabilityType.PROXY, seleniumProxy);
+        WebDriver driver = initDriver(capabilities);
+        browsermobServer.newHar(browsermobServerHarTs);
+        browsermobServer.addRequestFilter(new ProxyFilters.ProxyRequestFilter(url));
+        browsermobServer.addResponseFilter(new ProxyFilters.ProxyResponseFilter());
+        return driver;
+    }
+
     private static boolean findScenario(ArrayList<Map> featureScenarios, String scenarioPath, int line) {
+        HashMap<Integer, Map> hscenario = new HashMap<>();
         for (Map scenario : featureScenarios) {
-            ArrayList<Map> elements = (ArrayList) scenario.get("elements");
+            ArrayList<Map> elements = (ArrayList<Map>) scenario.get("elements");
             for (Map element : elements) {
+                element.put("uri", scenario.get("uri"));
                 int l = Utils.parseInt(element.get("line"), 0);
                 if (line == 0 || line == l) {
-                    element.put("uri", scenario.get("uri"));
-                    features.put(scenarioPath + (line == 0 ? ":" + l : ""), element);
+                    features.put(scenarioPath + ":" + l, element);
                     if (line == 0)
                         continue;
                     return true;
                 }
+                hscenario.put(l, element);
             }
         }
+        System.out.println("Cannot find scenario with line:" + line);
+        int closest = 0;
+        for (Integer l : hscenario.keySet()){
+            int dist = Math.abs(line - l);
+            if (dist < line - closest)
+                closest = l;
+        }
+        if (closest > 0){
+            features.put(scenarioPath + ":" + line, hscenario.get(closest));
+            System.out.println("Load closest scenario with line:" + closest);
+        }
+
         return false;
     }
 
     private static void close() {
-        if (MainRunner.browser.equals("none"))
+        if (browser.equals("none"))
             return;
         if (useSaucelabs) {
             if (driver instanceof RemoteWebDriver)
                 System.out.println("Link to your job: https://saucelabs.com/jobs/" + ((RemoteWebDriver) driver).getSessionId());
             driverQuit();
-        } else if (MainRunner.closeBrowserAtExit) {
+        } else if (closeBrowserAtExit) {
             System.out.println("Closing driver...");
-            if (MainRunner.driver != null)
+            if (driver != null)
                 driverQuit();
         }
     }
 
     private static void driverQuit() {
         try {
-            MainRunner.driver.quit();
+            driver.quit();
         } catch (Exception e) {
         }
     }
 
     private static String getCurrentUrl() {
-        // IE windows authentication popup disapears when MainRunner.driver.getCurrentUrl() executed
+        // IE windows authentication popup disapears when driver.getCurrentUrl() executed
         // so need to hook the function and wait for 10 seconds to look for the IE window authentication popup
         // and repeat every 1 hour
         long cs = System.currentTimeMillis();
         // check first 10 seconds only
         if (cs - ieAuthenticationTs < 10000) {
-            if (MainRunner.browser.equals("ie")
-                    && MainRunner.getExParams("require_authentication") != null
-                    && MainRunner.getExParams("require_authentication").equals("true")) {
+            if (browser.equals("ie")
+                    && getExParams("require_authentication") != null
+                    && getExParams("require_authentication").equals("true")) {
                 // check IE window authentication popup
                 int exit_value = runIEMethod();
                 // IE authentication popup login successfully, no more checking unitl next hour
@@ -743,7 +838,7 @@ public class MainRunner {
             if (cs - ieAuthenticationTs > 3600000)
                 ieAuthenticationTs = cs;
         }
-        return (MainRunner.driver.getCurrentUrl());
+        return (driver.getCurrentUrl());
     }
 
     /**
@@ -797,19 +892,19 @@ public class MainRunner {
                         + getExParams("require_authentication"));
                 return;
             }
-            if (!(Utils.isWindows() && MainRunner.browser.equals("firefox")) &&
-                    !(Utils.isWindows() && MainRunner.browser.equals("chrome")) &&
-                    !(Utils.isOSX() && MainRunner.browser.equals("safari"))) {
+            if (!(Utils.isWindows() && browser.equals("firefox")) &&
+                    !(Utils.isWindows() && browser.equals("chrome")) &&
+                    !(Utils.isOSX() && browser.equals("safari"))) {
                 System.out.println("AuthenticationDialog not required:"
                         + getExParams("require_authentication")
                         + ":" + os_name
-                        + ":" + MainRunner.browser);
+                        + ":" + browser);
                 return;
             }
 
             this.start();
             new Thread(() -> {
-                switch (MainRunner.browser) {
+                switch (browser) {
                     case "firefox":
                         runFirefoxBackgroundMethod();
                         break;
@@ -901,7 +996,7 @@ public class MainRunner {
             // chrome need workaround for the Chrome Authentication Required popup
             // check the current URL periodically and compare it with original URL
             String curl = null;
-            String org_url = MainRunner.url;
+            String org_url = url;
             org_url = org_url.replace("https://", "");
             org_url = org_url.replace("http://", "");
             org_url = org_url.replace("www.", "");
@@ -909,7 +1004,7 @@ public class MainRunner {
 
             while (true) {
                 Utils.threadSleep(4000, null);
-                curl = MainRunner.getWebDriver().getCurrentUrl();
+                curl = getWebDriver().getCurrentUrl();
                 // current url is still the same domain, then skip
                 if (curl.contains(org_url))
                     continue;
@@ -921,7 +1016,7 @@ public class MainRunner {
                 // there seems to be Chrome Authentication Required Popup
                 try {
                     if (width == -1) {
-                        width = MainRunner.driver.manage().window().getSize().width;
+                        width = driver.manage().window().getSize().width;
                         file_path = file_path + " " + width;
                     }
                     p = getRuntime().exec(file_path);
