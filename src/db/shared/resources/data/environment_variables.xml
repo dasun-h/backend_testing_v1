@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--<environment_variables name="profile-01">
+    <ori_browser>firefox</ori_browser>
+    <saucelabs>http://ztaf:39f182ee-8618-4ef7-965e-b5679b788fe2@ondemand.saucelabs.com:80/wd/hub</saucelabs>
+    <os>Windows 8</os>
+    <scenarios>src/db/projects/BackendTesting/features/crud_tester.feature</scenarios>
+    <tags>@scenario1</tags>
+</environment_variables>-->
+
+<environment_variables name="profile-02">
+<ori_browser>firefox</ori_browser>
+<saucelabs></saucelabs>
+<os>Windows 8</os>
+<scenarios>src/db/projects/BackendTesting/features/crud_tester.feature</scenarios>
+<tags>@scenario1</tags>
+</environment_variables>

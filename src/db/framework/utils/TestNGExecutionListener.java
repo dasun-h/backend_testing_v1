@@ -8,6 +8,7 @@ public class TestNGExecutionListener implements IExecutionListener {
     @Override
     public void onExecutionStart() {
         System.out.println("TestNG is staring the execution");
+        MainRunner.browser="firefox";
     }
 
     @Override

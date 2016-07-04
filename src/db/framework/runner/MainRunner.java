@@ -27,8 +27,6 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.safari.SafariDriver;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -44,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static db.framework.utils.EnvironmentVariableRetriever.*;
 import static java.lang.Runtime.getRuntime;
 
 /**
@@ -103,7 +102,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
     /**
      * Path to feature file to execute from
      */
-    public static String scenarios = getExParams("scenarios");
+    public static String scenarios = getExParams("scenarios") != null ? getExParams("scenarios") : SCENARIOS;
 
     /**
      * Browser to use as given in "browser" env variable. Default firefox.
@@ -510,19 +509,6 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         return null;
     }
 
-    @Parameters({"ori_browser"})
-    @BeforeTest
-    public static String retrieveBrowser(String ori_browser) throws InterruptedException {
-        browser = ori_browser;
-        System.out.println(browser + " browser selected");
-        return browser;
-    }
-
-    public static String selectBrowser() throws InterruptedException {
-        String new_browser = retrieveBrowser(browser);
-        return new_browser;
-    }
-
     @Test(groups = "db-testng", description = "Example of using TestNGCucumberRunner to invoke Cucumber")
     public void runCukes() {
         new TestNGCucumberRunner(getClass()).runCukes();
@@ -555,12 +541,9 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         Utils.createDirectory(temp = workspace + "/temp/", true);
 
         url = getExParams("website");
-        remoteOS = getExParams("remote_os");
-        if (remoteOS == null) {
-            System.out.println("Remote OS not specified.  Using default: Windows 7");
-            remoteOS = "Windows 7";
-        }
-        browser = getExParams("browser") != null ? getExParams("browser") : selectBrowser();
+        remoteOS = getExParams("remote_os") != null ? getExParams("remote_os") : OPERATING_SYSTEM;
+
+        browser = getExParams("browser") != null ? getExParams("browser") : BROWSER;
         browserVersion = getExParams("browser_version") != null ? getExParams("browser_version") : defaultBrowserVersion();
         System.out.println("-->Testing " + url + " with " + browser + " " + browserVersion + (useSaucelabs ? " on Sauce Labs" : ""));
         new AuthenticationDialog();
@@ -578,7 +561,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
 
 
         // use sauce labs
-        sauceUrl = getExParams("saucelabs") != null ? getExParams("saucelabs") : sauceUrl;
+        sauceUrl = getExParams("saucelabs") != null ? getExParams("saucelabs") : SAUCE_LABS;
         useSaucelabs = sauceUrl != null && sauceUrl.contains(".saucelabs.com");
 
         // close the test browser at scenario exit
@@ -645,12 +628,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
                     break;
                 }
             if (com_index != parts.length)
-                project = parts[com_index] + "." +
-                        parts[com_index + 1] + "." +
-                        parts[com_index + 2] + "." +
-                        parts[com_index + 3] + "." +
-                        parts[com_index + 4] + "." +
-                        parts[com_index + 5];
+                project = parts[com_index] + "." + parts[com_index + 1] + "." + parts[com_index + 2] + "." + parts[com_index + 3] + "." + parts[com_index + 4] + "." + parts[com_index + 5];
         }
         if (project != null)
             System.out.println("-->Current project: " + project);
