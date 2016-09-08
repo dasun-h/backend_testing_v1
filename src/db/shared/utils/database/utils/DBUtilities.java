@@ -3,9 +3,9 @@ package db.shared.utils.database.utils;
 import java.sql.Connection;
 
 public class DBUtilities {
+    public static DBConnection dbConnection = new DBConnection();
 
     public DBUtilities() {
-
     }
 
     /**
@@ -14,12 +14,11 @@ public class DBUtilities {
      * @return DB connection object
      */
     public static Connection setupMySqlDBConnection() {
-        DBConnection dbConnection = new DBConnection();
         return dbConnection.createMySqlConnection();
     }
 
-/*    public static Connection setupSqlDBConnection() {
-        //TODO
-    }*/
+    public static Connection setupMSSqlDBConnection() {
+        return dbConnection.createMSSqlConnection();
+    }
 
 }

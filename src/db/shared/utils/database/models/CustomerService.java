@@ -64,4 +64,20 @@ public class CustomerService extends StepUtils {
         }
         return deletedCustomerInformation;
     }
+
+    public static String[] getClientInformation() throws Throwable {
+        String[] clientInformation = null;
+        String sqlQuery = CommonUtils.getSqlQueries().get("retrieve_employee_type_info").toString();
+        Connection con = DBUtilities.setupMSSqlDBConnection();
+        PreparedStatement preparedStatement = con.prepareStatement(sqlQuery);
+        ResultSet rs = preparedStatement.executeQuery();
+        while (rs.next()) {
+            String TypeCode = rs.getString("EmployeeTypeCode");
+            String TypeDesc = rs.getString("EmployeeTypeDesc");
+            String ColorCode = rs.getString("ColorCode");
+            clientInformation = new String[]{TypeCode, TypeDesc, ColorCode};
+        }
+        return clientInformation;
+    }
+
 }

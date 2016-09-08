@@ -9,6 +9,8 @@ import java.util.List;
 
 public class GenerateReport {
 
+    public GenerateReport() {}
+
     public static void GenerateMasterthoughtReport(){
         try{
             File reportOutputDirectory = new File("target");

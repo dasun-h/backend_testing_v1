@@ -27,8 +27,18 @@ public class DBConnection {
         return con;
     }
 
-    public Connection createSqlConnection() {
-        //TODO
+    public Connection createMSSqlConnection() {
+        String db_connect_string = "jdbc:sqlserver://DEV-54;databaseName=FMSIClient;integratedSecurity=false";
+        String db_userid = "FMSI_APP";
+        String db_password = "00001111";
+        try {
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            con = DriverManager.getConnection(db_connect_string, db_userid, db_password);
+            System.out.println(con + " Connection created");
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Error occurs while creating connection to sql database" + e.getMessage());
+        }
         return con;
     }
 
