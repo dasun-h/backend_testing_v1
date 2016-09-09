@@ -19,7 +19,7 @@
         <repository>
             <id>internal</id>
             <name>Internal Maven Repository</name>
-            <url>file://C:/Users/Zone/google-drive/mvn-releases</url>
+            <url>file://C:/Users/dasunh/google-drive/mvn-releases</url>
         </repository>
     </repositories>
 
