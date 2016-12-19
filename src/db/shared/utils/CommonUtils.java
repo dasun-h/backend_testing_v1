@@ -1,7 +1,9 @@
 package db.shared.utils;
 
+import com.macys.sdt.framework.runner.MainRunner;
 import db.framework.utils.StepUtils;
 import db.framework.utils.Utils;
+import org.apache.commons.beanutils.converters.FileConverter;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -69,11 +71,19 @@ public abstract class CommonUtils extends StepUtils {
         return new String(digits);
     }
 
-    public static File getResourceFile(String fname) {
-        File resources = new File("resources/" + fname);
-        if (resources.exists())
-            return resources;
-        return new File(CommonUtils.class.getResource("/db/shared/resources/data/" + fname).getFile());
+    /**
+     * Gets a resource file with a given name
+     *
+     * @param fname file name
+     * @return resulting File
+     */
+
+    private static String getResourceFile(String fname) {
+        File file = new File(fname);//full file path URL
+        String absolutePath = file.getAbsolutePath();
+        String dirPath = absolutePath.replace(fname, "");
+        String fullPath = dirPath + "src/db/shared/resources/data/" + fname;
+        return fullPath;
     }
 
     /**
@@ -82,18 +92,14 @@ public abstract class CommonUtils extends StepUtils {
      * @return SQL queries as json object
      */
     public static JSONObject getSqlQueries() {
-
-        File queries = getResourceFile("queries.json");
+        File queries = new File(getResourceFile("queries.json"));
         JSONObject jsonObject = null;
-
         try {
             String jsonTxt = Utils.readTextFile(queries);
             jsonObject = new JSONObject(jsonTxt);
         } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
-
         return jsonObject;
-
     }
 }

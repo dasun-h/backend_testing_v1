@@ -434,7 +434,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
                     break;
                 case "chrome":
                     capabilities.setCapability("version", browserVersion);
-                    String fileName = "chromedriver.exe";
+                    String fileName = "chromedriver2_25.exe";
                     if (Utils.isOSX())
                         fileName = "chromedriver";
                     file = new File(workspace + "src/db/framework/selenium_drivers/" + fileName);

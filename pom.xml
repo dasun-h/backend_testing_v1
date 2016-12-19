@@ -8,7 +8,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <project.name>Backend_testing</project.name>
         <project.version>1.0-SNAPSHOT</project.version>
-        <db_framework.version>0.0.212</db_framework.version>
+        <db_framework.version>0.0.55</db_framework.version>
     </properties>
 
     <groupId>db</groupId>
