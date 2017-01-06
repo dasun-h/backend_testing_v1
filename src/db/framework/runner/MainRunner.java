@@ -3,28 +3,23 @@ package db.framework.runner;
 import com.github.mkolisnyk.cucumber.runner.ExtendedCucumber;
 import com.github.mkolisnyk.cucumber.runner.ExtendedCucumberOptions;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import cucumber.api.CucumberOptions;
+import cucumber.api.Scenario;
 import cucumber.api.testng.AbstractTestNGCucumberTests;
 import cucumber.api.testng.TestNGCucumberRunner;
-import db.framework.utils.ProxyFilters;
+import db.framework.interactions.Navigate;
+import db.framework.utils.EnvironmentVariableRetriever;
+import db.framework.utils.StepUtils;
 import db.framework.utils.Utils;
 import net.lightbody.bmp.BrowserMobProxy;
-import net.lightbody.bmp.BrowserMobProxyServer;
-import net.lightbody.bmp.client.ClientUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.edge.EdgeDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.ie.InternetExplorerDriver;
-import org.openqa.selenium.remote.CapabilityType;
-import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
-import org.openqa.selenium.safari.SafariDriver;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
@@ -32,17 +27,14 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.URL;
 import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static db.framework.runner.MainRunner.scenarios;
 import static db.framework.utils.EnvironmentVariableRetriever.*;
+import static db.framework.utils.StepUtils.*;
 import static java.lang.Runtime.getRuntime;
 
 /**
@@ -56,20 +48,15 @@ import static java.lang.Runtime.getRuntime;
         overviewReport = true,
         toPDF = true,
         outputFolder = "target")
-@CucumberOptions(features = "src/db/projects/BackendTesting/features/", plugin = {"pretty", "html:target/site/cucumber-pretty",
-        "json:target/cucumber.json", "pretty:target/cucumber-pretty.txt",
-        "usage:target/cucumber-usage.json", "junit:target/cucumber-results.xml"}, glue = {"db.shared.steps"}, tags = {"@scenario1"})
+@CucumberOptions(
+        features = {""},
+        plugin = {"pretty", "html:target/site/cucumber-pretty",
+                "json:target/cucumber.json", "pretty:target/cucumber-pretty.txt",
+                "usage:target/cucumber-usage.json", "junit:target/cucumber-results.xml"},
+        glue = {"db.shared.steps"},
+        tags = {""}
+)
 public class MainRunner extends AbstractTestNGCucumberTests {
-    /**
-     * BrowserMob proxy server
-     */
-    public static BrowserMobProxy browsermobServer = null;
-
-    /**
-     * Will be true if executing through saucelabs. Checks for valid saucelabs URL in "saucelabs" env variable
-     */
-
-    public static boolean useSaucelabs;
 
     /**
      * Contains OS to use when executing on saucelabs as given in "remote_os" env variable
@@ -97,42 +84,59 @@ public class MainRunner extends AbstractTestNGCucumberTests {
     /**
      * Map of current cucumber features
      */
-    public static HashMap features = new HashMap();
+    public static HashMap<String, Map> features = new HashMap<>();
 
     /**
      * Path to feature file to execute from
      */
-    public static String scenarios = getExParams("scenarios") != null ? getExParams("scenarios") : SCENARIOS;
+    public static String scenarios = getEnvVar("scenarios") != null ? getEnvVar("scenarios") : SCENARIOS;
+
+    /**
+     * Whether we're running in debug mode
+     */
+    public static boolean debugMode = booleanParam("debug");
+
+    /**
+     * Will be true if executing through saucelabs. Checks for valid saucelabs URL in "saucelabs" env variable
+     */
+
+    public static boolean useSauceLabs;
+
+    /**
+     * The Sauce Labs username to use
+     */
+    public static String sauceUser = getEnvOrExParam("sauce_user") != null ? getEnvOrExParam("sauce_user") : SAUCE_USER;
+    /**
+     * The Sauce Labs API key for the user
+     */
+    public static String sauceKey = getEnvOrExParam("sauce_key")!= null ? getEnvOrExParam("sauce_key") : SAUCE_KEY;
+
+    /**
+     * Path to active project files on file system
+     */
+    public static String projectDir = null;
 
     /**
      * Browser to use as given in "browser" env variable. Default firefox.
      */
-    public static String browser;
+    public static String browser = getEnvVar("browser") != null ? getEnvVar("browser") : BROWSER;
 
     /**
      * Version of browser to use as given in "browser_version" env variable
      */
-    public static String browserVersion = null;
+    public static String browserVersion = getEnvOrExParam("browser_version");
 
     /**
      * Whether to close browser after testing is complete. False if "DEBUG" env variable is present
      */
     public static Boolean closeBrowserAtExit = true;
 
-    /**
-     * Whether to collect coremetrics tags or not as given in "tag_collection" env variable
-     */
-    public static Boolean tagCollection = false;
 
     /**
      * URL to start at and use as a base as given in "website" env variable
      */
-    public static String url = "";
+    public static String url = getEnvVar("website") != null ? getEnvVar("website") : WEBSITE;
 
-    /**
-     * Time the tests were started
-     */
-    public static long startTime = System.currentTimeMillis();
 
     /**
      * Current run status. 0 is good, anything else is bad
@@ -140,9 +144,14 @@ public class MainRunner extends AbstractTestNGCucumberTests {
     public static int runStatus = 0;
 
     /**
+     * Time the tests were started
+     */
+    public static long startTime = System.currentTimeMillis();
+
+    /**
      * Wait timeout as given in "timeout" env variable. Default 30 seconds
      */
-    public static int timeout = 30; // set the general default timeout to 30 seconds
+    public static int timeout; // set the general default timeout to 30 seconds
 
     /**
      * List containing URL's that have been visited
@@ -150,26 +159,139 @@ public class MainRunner extends AbstractTestNGCucumberTests {
     public static ArrayList<String> URLStack = new ArrayList<>();
 
     /**
-     * Path to project currently being run
-     */
-    public static String project = null;
-    /**
      * The current URL
      */
-    public static String currentURL;
-    /**
-     * Whether the proxy is disabled
-     */
-    public static boolean disableProxy = true;
-
-    /**
-     * The Sauce Labs URL being used
-     */
-    public static String sauceUrl;
+    public static String currentURL = "";
 
     private static WebDriver driver = null;
     private static long ieAuthenticationTs = System.currentTimeMillis() - 10000; // set authentication checking interval out of range
-    private static String browsermobServerHarTs = System.currentTimeMillis() + "";
+
+    /**
+     * Main method to run tests
+     *
+     * @param argv run args. Ignored, use environment variables for all config
+     * @throws Throwable if an exception or error gets here, we're done
+     */
+    public static void main(String[] argv) throws Throwable {
+        getEnvVars();
+        ArrayList<String> featureScenarios = getFeatureScenarios();
+        if (featureScenarios == null) {
+            throw new Exception("Error getting scenarios");
+        }
+
+        // add any tags
+        String tags = getEnvOrExParam("tags");
+        if (tags != null) {
+            featureScenarios.add("--tags");
+            featureScenarios.add(tags);
+        }
+
+        // attempt to use workspace as relative path to feature file (if needed)
+        if (workspace != null) {
+            for (int i = 0; i < featureScenarios.size(); i++) {
+                String value = featureScenarios.get(i);
+                if (value.equals("--tags")) {
+                    break;
+                }
+                // remove windows drive to avoid incorrect matches on ":"
+                String drive = "";
+                if (value.matches("[A-Z]:.*?")) {
+                    drive = value.substring(0, 2);
+                    value = value.substring(2);
+                }
+                // remove any line number args
+                value = value.split(":")[0];
+                value = drive + value;
+                // make sure file exists
+                File featureFile = new File(value);
+                if (!(featureFile.exists() || featureFile.getAbsoluteFile().exists())) {
+                    featureScenarios.set(i, workspace + "/" + featureScenarios.get(i));
+                }
+            }
+        }
+
+        featureScenarios.add("--glue");
+        featureScenarios.add("db.shared.steps");
+        featureScenarios.add("--plugin");
+        featureScenarios.add("html:logs");
+
+        System.out.println("Browser Version:" + browserVersion);
+        driver = getWebDriver();
+
+        PageHangWatchDog.init();
+
+        new AuthenticationDialog();
+
+        try {
+            runStatus = cucumber.api.cli.Main.run(featureScenarios.toArray(new String[featureScenarios.size()]),
+                    Thread.currentThread().getContextClassLoader());
+        } catch (Throwable e) {
+            e.printStackTrace();
+            runStatus = 1;
+        } finally {
+            close();
+            if (argv != null) {
+                System.exit(runStatus);
+            }
+        }
+    }
+
+    public static void getEnvVars() {
+        if (workspace == null) {
+            workspace = ".";
+        }
+        workspace = workspace.replace('\\', '/');
+        workspace = workspace.endsWith("/") ? workspace : workspace + "/";
+
+        scenarios = scenarios.replace('\\', '/');
+
+        Utils.createDirectory(logs = workspace + "logs/", true);
+        Utils.createDirectory(temp = workspace + "temp/", true);
+
+        if ((remoteOS == null || remoteOS.isEmpty()) && (OPERATING_SYSTEM == null || OPERATING_SYSTEM.isEmpty())) {
+            System.out.println("Remote OS not specified. Using default (Windows 7)");
+            remoteOS = "Windows 7";
+        } else {
+            remoteOS = OPERATING_SYSTEM;
+            System.out.println("OS Selected: " + remoteOS);
+        }
+
+        // use saucelabs when valid "sauce_user" and "sauce_key" is provided
+        useSauceLabs = (!sauceUser.isEmpty() && !sauceKey.isEmpty());
+        if (useSauceLabs == true) {
+            System.out.println("SauceLab Username: " + sauceUser);
+            System.out.println("SauceLab Username: " + sauceUser);
+        }else
+            System.out.println("SauceLab not specified in the environment variables file");
+
+        // close browser at exist unless debugMode is on or test is appTest
+        closeBrowserAtExit = !debugMode;
+
+        if ((url == null || url.isEmpty()) && (WEBSITE == null || WEBSITE.isEmpty())) {
+            Assert.fail("\"website\" variable required to test a website");
+        } else {
+            url = WEBSITE;
+            System.out.println("Website Given: " + url);
+        }
+        if ((browser == null || browser.isEmpty()) && (BROWSER == null || BROWSER.isEmpty())) {
+            System.out.println("No browser given, using default (chrome)");
+            browser = "chrome";
+        } else {
+            browser = BROWSER;
+            System.out.println("Browser Given: " + BROWSER);
+        }
+        if (browserVersion == null) {
+            browserVersion = WebDriverConfigurator.defaultBrowserVersion();
+        }
+        // close the test browser at scenario exit
+        String envVal = getEnvOrExParam("timeout");
+        if (envVal != null) {
+            timeout = Integer.parseInt(envVal);
+        } else {
+            timeout = safari() ? 130 : 95;
+        }
+
+    }
 
     /**
      * Gets whether or not debug mode is on
@@ -177,7 +299,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
      * @return true if debug mode is on
      */
     public static boolean isDebug() {
-        String debug = getExParams("DEBUG");
+        String debug = getExParam("DEBUG");
         return debug != null && debug.matches("t|true");
     }
 
@@ -187,9 +309,21 @@ public class MainRunner extends AbstractTestNGCucumberTests {
      * @param quit whether to close the driver
      */
     public static void resetDriver(boolean quit) {
-        if (quit)
-            driver.quit();
-        driver = null;
+        try {
+            if (quit) {
+                driver.quit();
+                System.out.println("driver quit");
+                if (ie()) { // workaround for IE browser closing
+                    driver.quit();
+                }
+            }
+            driver = null;
+            System.out.println("driver set to null");
+        } catch (Exception e) {
+            System.err.println("error in resetDriver : " + e.getMessage());
+            driver = null;
+            System.out.println("driver set to null in catch");
+        }
     }
 
     /**
@@ -206,26 +340,19 @@ public class MainRunner extends AbstractTestNGCucumberTests {
      *
      * @return current webDriver instance
      */
-    public static WebDriver getWebDriver() {
-        try {
-            if (driver != null) {
-                currentURL = getCurrentUrl();
-                if (!URLStack.get(URLStack.size() - 1).equals(currentURL))
-                    URLStack.add(currentURL);
+    public static synchronized WebDriver getWebDriver() {
+        if (URLStack.size() == 0) {
+            URLStack.add(url);
+        }
+        if (driver != null) {
+            if (!URLStack.get(URLStack.size() - 1).equals(currentURL)) {
+                URLStack.add(currentURL);
             }
-        } catch (Exception e) {
+            return driver;
         }
 
-        if (driver != null)
-            return driver;
-
         for (int i = 0; i < 2; i++) {
-            if (disableProxy) {
-                driver = initDriver(null);
-            } else {
-                driver = initDriverWithProxy();
-            }
-
+            driver = WebDriverConfigurator.initDriver(null);
             try {
                 if (browser.equals("safari")) {
                     Dimension dimension = new Dimension(1280, 1024);
@@ -240,40 +367,38 @@ public class MainRunner extends AbstractTestNGCucumberTests {
                 Utils.threadSleep(2000, null);
             }
         }
-
         System.err.println("Cannot initialize driver: exiting test...");
+        System.out.println("Quit the driver " + driver);
+        if (driver != null) {
+            driverQuit();
+        }
         System.exit(-1);
         // return is unreachable but IDE doesn't realize, return non-null
         // to get rid of invalid lint errors
         return new ChromeDriver();
     }
 
-
     /**
-     * Retrieves an environment variable OR ex_param
+     * Retrieves a parameter value from "ex_params" environment variable
      *
-     * @param param name of parameter to retrieve
+     * @param name name of the parameter to retrieve
      * @return value of parameter or null if not found
      */
-    public static String getExParams(String param) {
-        String value = System.getenv(param);
-        if (value != null)
-            return value;
-        param += "=";
+    public static String getExParam(String name) {
         try {
-            String exparams = URLDecoder.decode(System.getenv("ex_params"), "utf-8");
-            if (exparams != null && !exparams.isEmpty()) {
-                StringBuilder sb = new StringBuilder(exparams);
-                for (int i = 0, qindex = -1; i < sb.length(); i++) {
+            String exParams = URLDecoder.decode(System.getenv("ex_params"), "utf-8");
+            if (exParams != null && !exParams.isEmpty()) {
+                StringBuilder sb = new StringBuilder(exParams);
+                for (int i = 0, quoteIndex = -1; i < sb.length(); i++) {
                     char c = sb.charAt(i);
-                    if (c == '\"' && qindex == -1) {
-                        qindex = i;
+                    if (c == '\"' && quoteIndex == -1) {
+                        quoteIndex = i;
                     }
-                    if (qindex > -1) {
+                    if (quoteIndex > -1) {
                         for (i = i + 1; i < sb.length(); i++) {
                             c = sb.charAt(i);
                             if (c == '\"') {
-                                qindex = -1;
+                                quoteIndex = -1;
                                 break;
                             }
                             if (c == ' ') {
@@ -282,17 +407,55 @@ public class MainRunner extends AbstractTestNGCucumberTests {
                         }
                     }
                 }
-                exparams = sb.toString();
-                String[] exParams = exparams.split(" ");
-                for (String exParam : exParams) {
-                    if (exParam.startsWith(param)) {
-                        return exParam.split("=")[1].trim().replace('|', ' ').replace("\"", "");
+                exParams = sb.toString();
+                String[] paramList = exParams.split(" ");
+                for (String param : paramList) {
+                    if (param.startsWith(name)) {
+                        return param.split("=")[1].trim().replace('|', ' ').replace("\"", "");
                     }
                 }
             }
         } catch (Exception ex) {
+            // variable not found or malformed
         }
         return null;
+    }
+
+    /**
+     * Retrieves an environment variable OR ex_param
+     *
+     * @param name name of parameter to retrieve
+     * @return value of parameter or null if not found
+     */
+    public static String getEnvOrExParam(String name) {
+        String val = getEnvVar(name);
+        return val != null ? val : getExParam(name);
+    }
+
+    /**
+     * Retrieves an environment variable
+     *
+     * @param name name of parameter to retrieve
+     * @return value of parameter or null if not found
+     */
+    public static String getEnvVar(String name) {
+        String value = System.getenv(name);
+        value = value == null ? null : value.trim();
+        if (value != null && !value.isEmpty()) {
+            return value;
+        }
+        return null;
+    }
+
+    /**
+     * Matches an ex_param against t|true and converts it to a boolean
+     *
+     * @param name name of parameter
+     * @return true if parameter exists and matches "t|true"
+     */
+    public static boolean booleanParam(String name) {
+        String param = getEnvOrExParam(name);
+        return param != null && param.matches("t|true");
     }
 
     /**
@@ -305,7 +468,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         if (scenarios == null)
             return scenarioList;
         scenarios = scenarios.trim();
-        System.out.println("-> Parsing env scenarios:" + scenarios);
+        System.out.println("Scenario Path Selected: " + scenarios);
         String delimit = ".feature";
         int i = 0, end = scenarios.indexOf(delimit);
         while (i < scenarios.length()) {
@@ -313,14 +476,13 @@ public class MainRunner extends AbstractTestNGCucumberTests {
             if (end == -1)
                 end = scenarios.length();
             String scenarioPath = scenarios.substring(i, end).trim();
-            System.out.println("->" + scenarioPath);
             scenarioList.add(scenarioPath);
             i = end;
         }
 
         Collections.sort(scenarioList);
         ArrayList<Map> featureScenarios = null;
-        String workSpace = getExParams("WORKSPACE");
+        String workSpace = getExParam("WORKSPACE");
         if (workSpace == null)
             workSpace = "";
         for (String featureFilePath : scenarioList) {
@@ -337,17 +499,34 @@ public class MainRunner extends AbstractTestNGCucumberTests {
                     System.out.println("File not found: " + path);
                     path = workSpace + "/" + path;
                 }
-                featureScenarios = new Gson().fromJson(Utils.gherkinTojson(false, path), ArrayList.class);
+                String json = Utils.gherkinToJson(false, path);
+                try {
+                    featureScenarios = new Gson().fromJson(json, ArrayList.class);
+                } catch (JsonSyntaxException jex) {
+                    System.err.println("--> Failed to parse : " + path);
+                    System.err.println("--> json :\n\n" + json);
+                    System.err.println();
+                    throw jex;
+                }
             }
             findScenario(featureScenarios, path, line);
         }
 
         // condense any duplicate feature files
         HashMap<String, ArrayList<String>> featureLines = new HashMap<>();
+        // remove windows drive to avoid incorrect matches on ":"
+        final String drive = scenarioList.get(0).matches("[A-Z]:.*?") ? scenarioList.get(0).substring(0, 2) : null;
+        if (drive != null) {
+            for (i = 0; i < scenarioList.size(); i++) {
+                String scenario = scenarioList.remove(i);
+                scenarioList.add(i, scenario.substring(2));
+            }
+        }
         for (String scenario : scenarioList) {
             int lineIndex = scenario.lastIndexOf(':');
-            if (lineIndex == -1)
+            if (lineIndex == -1) {
                 continue;
+            }
             String scenarioPath = scenario.substring(0, lineIndex).trim();
             String lineNum = scenario.substring(lineIndex + 1);
             ArrayList<String> lines = featureLines.get(scenarioPath);
@@ -365,7 +544,12 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         scenarioList.addAll(featureLines.keySet().stream()
                 .map((key) -> key + ":" + StringUtils.join(featureLines.get(key), ":"))
                 .collect(Collectors.toList()));
-
+        if (drive != null) {
+            for (i = 0; i < scenarioList.size(); i++) {
+                String scenario = scenarioList.remove(i);
+                scenarioList.add(i, drive + scenario);
+            }
+        }
         return scenarioList;
     }
 
@@ -382,133 +566,6 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         }
     }
 
-    private static DesiredCapabilities disabledProxyCap(DesiredCapabilities desiredCap) {
-        if (disableProxy) {
-            desiredCap.setCapability(CapabilityType.ForSeleniumServer.AVOIDING_PROXY, true);
-            desiredCap.setCapability(CapabilityType.ForSeleniumServer.PROXYING_EVERYTHING, false);
-        }
-        return desiredCap;
-    }
-
-    private static DesiredCapabilities initCapabilities() {
-        switch (browser) {
-            case "ie":
-                DesiredCapabilities ieCapabilities = DesiredCapabilities.internetExplorer();
-                ieCapabilities.setCapability(InternetExplorerDriver.INITIAL_BROWSER_URL, true);
-                ieCapabilities.setCapability(CapabilityType.ACCEPT_SSL_CERTS, true);
-                ieCapabilities.setCapability(InternetExplorerDriver.ENABLE_PERSISTENT_HOVERING, false);
-                ieCapabilities.setCapability(InternetExplorerDriver.REQUIRE_WINDOW_FOCUS, true);
-                ieCapabilities.setCapability(InternetExplorerDriver.NATIVE_EVENTS, false);
-                return disabledProxyCap(ieCapabilities);
-            case "chrome":
-                DesiredCapabilities capabilities = DesiredCapabilities.chrome();
-                ChromeOptions chrome = new ChromeOptions();
-                chrome.addArguments("test-type");
-                capabilities.setCapability(ChromeOptions.CAPABILITY, chrome);
-                return disabledProxyCap(capabilities);
-            case "safari":
-                DesiredCapabilities sfCapabilities = DesiredCapabilities.safari();
-                sfCapabilities.setCapability("unexpectedAlertBehaviour", "accept");
-                return disabledProxyCap(sfCapabilities);
-            case "edge":
-                return DesiredCapabilities.edge();
-            default:
-                return disabledProxyCap(DesiredCapabilities.firefox());
-        }
-    }
-
-    private static WebDriver initDriver(DesiredCapabilities capabilities) {
-        if (capabilities == null)
-            capabilities = initCapabilities();
-        if (!useSaucelabs) {
-            return new ChromeDriver(capabilities);
-        } else if (!useSaucelabs) {
-            switch (browser) {
-                case "ie":
-                    capabilities.setCapability("version", browserVersion);
-                    File file = new File(workspace + "src/db/framework/selenium_drivers/IEDriverServer.exe");
-                    if (!file.exists())
-                        file = new File(workspace + "db/framework/selenium_drivers/IEDriverServer.exe");
-                    System.setProperty("webdriver.ie.driver", file.getAbsolutePath());
-                    driver = new InternetExplorerDriver(capabilities);
-                    break;
-                case "chrome":
-                    capabilities.setCapability("version", browserVersion);
-                    String fileName = "chromedriver2_25.exe";
-                    if (Utils.isOSX())
-                        fileName = "chromedriver";
-                    file = new File(workspace + "src/db/framework/selenium_drivers/" + fileName);
-                    if (!file.exists())
-                        file = new File(workspace + "db/framework/selenium_drivers/" + fileName);
-                    System.setProperty("webdriver.chrome.driver", file.getAbsolutePath());
-                    driver = new ChromeDriver(capabilities);
-                    break;
-                case "safari":
-                    capabilities.setCapability("version", browserVersion);
-                    // safari driver is not stable, retry 3 times
-                    int count = 0;
-                    while (driver == null && count++ < 3)
-                        try {
-                            driver = new SafariDriver(capabilities);
-                        } catch (Exception e) {
-                            Utils.threadSleep(5000, null);
-                        }
-                    break;
-                case "edge":
-                    driver = new EdgeDriver(capabilities);
-                    break;
-                default:
-                    driver = new FirefoxDriver(capabilities);
-                    break;
-            }
-        }
-        if (useSaucelabs)
-            driver = initSauceLabs(capabilities);
-
-        Assert.assertNotNull("Driver should have been initialized by now", driver);
-
-        if (!browser.equals("safari")) {
-            WebDriver.Timeouts to = driver.manage().timeouts();
-            to.pageLoadTimeout(30, TimeUnit.SECONDS);
-            to.setScriptTimeout(30, TimeUnit.SECONDS);
-        }
-
-        Utils.PageHangWatchDog.init();
-        return driver;
-    }
-
-    private static WebDriver initSauceLabs(DesiredCapabilities capabilities) {
-        try {
-            // remove quoted chars
-            remoteOS = remoteOS.replace("\"", "");
-            remoteOS = remoteOS.replace("'", "");
-            capabilities.setCapability("platform", remoteOS);
-            capabilities.setCapability("version", browserVersion);
-            capabilities.setCapability("idleTimeout", 240);
-            capabilities.setCapability("maxDuration", 3600);
-            // need to increase res or we get tablet layout
-            // not supported on win10 and mac OSX El Capitan (10.11)
-            if (!remoteOS.matches("^Windows 10|(.*?)10.11$")) {
-                capabilities.setCapability("screenResolution", "1280x1024");
-            }
-            if (browser.equals("safari")) {
-                // safari driver is not stable, retry 3 times
-                int count = 0;
-                while (count++ < 3)
-                    try {
-                        return new RemoteWebDriver(new URL(sauceUrl), capabilities);
-                    } catch (Error | Exception e) {
-                        Utils.threadSleep(5000, null);
-                    }
-            } else
-                return new RemoteWebDriver(new URL(sauceUrl), capabilities);
-
-        } catch (Exception e) {
-            System.err.println("Could not create remove web driver: " + e);
-        }
-        return null;
-    }
-
     @Test(groups = "db-testng", description = "Example of using TestNGCucumberRunner to invoke Cucumber")
     public void runCukes() {
         new TestNGCucumberRunner(getClass()).runCukes();
@@ -522,225 +579,6 @@ public class MainRunner extends AbstractTestNGCucumberTests {
             File scrFile = ((TakesScreenshot) getWebDriver()).getScreenshotAs(OutputType.FILE);
             FileUtils.copyFile(scrFile, new File("target/img_cucumber_jvm.jpg"));
         }
-    }
-
-    /**
-     * Main method to run tests
-     *
-     * @param argv run args. Ignored, use environment variables for all config
-     * @throws Throwable if an exception or error gets here, we're done
-     */
-    public static void main(String[] argv) throws Throwable {
-
-        workspace = getExParams("WORKSPACE");
-        if (workspace == null)
-            workspace = ".";
-        workspace = workspace.replace('\\', '/');
-        workspace = workspace.endsWith("/") ? workspace : workspace + "/";
-        Utils.createDirectory(logs = workspace + "/logs/", argv != null);
-        Utils.createDirectory(temp = workspace + "/temp/", true);
-
-        url = getExParams("website");
-        remoteOS = getExParams("remote_os") != null ? getExParams("remote_os") : OPERATING_SYSTEM;
-
-        browser = getExParams("browser") != null ? getExParams("browser") : BROWSER;
-        browserVersion = getExParams("browser_version") != null ? getExParams("browser_version") : defaultBrowserVersion();
-        System.out.println("-->Testing " + url + " with " + browser + " " + browserVersion + (useSaucelabs ? " on Sauce Labs" : ""));
-        new AuthenticationDialog();
-
-        System.out.println("\n\n");
-        closeBrowserAtExit = !isDebug();
-
-        // tag_collection
-        String env_val = getExParams("tag_collection");
-        tagCollection = false;
-        if (env_val != null)
-            tagCollection = env_val.toLowerCase().equals("true");
-        if (tagCollection)
-            System.out.println("tag_collection is enabled");
-
-
-        // use sauce labs
-        sauceUrl = getExParams("saucelabs") != null ? getExParams("saucelabs") : SAUCE_LABS;
-        useSaucelabs = sauceUrl != null && sauceUrl.contains(".saucelabs.com");
-
-        // close the test browser at scenario exit
-        env_val = getExParams("timeout");
-        if (env_val != null) {
-            int timeout = Integer.parseInt(env_val);
-            if (timeout > 0 && timeout != timeout)
-                timeout = timeout;
-        }
-
-        ArrayList<String> featureScenarios = getFeatureScenarios();
-        if (featureScenarios == null)
-            throw new Exception("Error getting scenarios");
-
-        getWebDriver();
-
-        HashMap<String, ArrayList<String>> hs = new HashMap<>();
-        String firstScenario = (featureScenarios.size() > 0) ? featureScenarios.get(0) : "";
-        for (String scenario : featureScenarios) {
-            int lineIndex = scenario.lastIndexOf(':');
-            if (lineIndex == -1)
-                continue;
-            String scenarioPath = scenario.substring(0, lineIndex).trim();
-            String line = scenario.substring(lineIndex + 1);
-            ArrayList<String> lines = hs.get(scenarioPath);
-            if (lines == null) {
-                lines = new ArrayList<>();
-                hs.put(scenarioPath, lines);
-            }
-            lines.add(line);
-        }
-
-        featureScenarios.clear();
-        featureScenarios = hs.keySet().stream()
-                .map((key) -> key + ":" + StringUtils.join(hs.get(key), ":"))
-                .collect(Collectors.toCollection(ArrayList<String>::new));
-
-        if (featureScenarios.isEmpty())
-            featureScenarios.add(firstScenario);
-
-        String tags = getExParams("tags");
-        if (tags != null) {
-            tags = tags.trim();
-            if (!tags.isEmpty()) {
-                featureScenarios.add("--tags");
-                featureScenarios.add(tags);
-            }
-        }
-
-        // set a project
-        env_val = getExParams("project");
-        if (env_val != null) {
-            int count = StringUtils.countMatches(env_val, ".");
-            if (3 < count)
-                project = env_val;
-        }
-        if (project == null) {
-            String project_path = firstScenario.replace("/", ".").replace("\\", ".");
-            String[] parts = project_path.split(Pattern.quote("."));
-            int com_index = 0;
-            for (int i = 0; i < parts.length; i++)
-                if (parts[i].equals("db")) {
-                    com_index = i;
-                    break;
-                }
-            if (com_index != parts.length)
-                project = parts[com_index] + "." + parts[com_index + 1] + "." + parts[com_index + 2] + "." + parts[com_index + 3] + "." + parts[com_index + 4] + "." + parts[com_index + 5];
-        }
-        if (project != null)
-            System.out.println("-->Current project: " + project);
-        System.out.println("-->Running with parameters:\n" + featureScenarios);
-        if (workspace != null && !workspace.isEmpty())
-            for (int i = 0; i < featureScenarios.size(); i++) {
-                String value = featureScenarios.get(i);
-                if (value.equals("--tags"))
-                    break;
-                File featureFile = new File(value);
-                if (!(featureFile.exists() || featureFile.getAbsoluteFile().exists()))
-                    value = workspace + "/" + value;
-                featureScenarios.set(i, value);
-            }
-
-        //--glue db.shared.steps --plugin json:logs/cucumber.json
-        featureScenarios.add("--glue");
-        if (project != null) {
-            featureScenarios.add(project);
-            featureScenarios.add("--glue");
-        }
-        featureScenarios.add("db.shared.steps");
-        featureScenarios.add("--plugin");
-        featureScenarios.add("html:logs");
-
-        System.out.println("-->Testing " + url + " using " + remoteOS + ":" + browser + " " + browserVersion + (useSaucelabs ? " on Sauce Labs" : ""));
-
-        driver = getWebDriver();
-
-        new AuthenticationDialog();
-
-        try {
-            runStatus = cucumber.api.cli.Main.run(featureScenarios.toArray(new String[featureScenarios.size()]),
-                    Thread.currentThread().getContextClassLoader());
-        } catch (Throwable e) {
-            e.printStackTrace();
-            runStatus = 1;
-        } finally {
-            close();
-            if (argv != null)
-                System.exit(runStatus);
-        }
-    }
-
-    private static String defaultBrowserVersion() {
-        switch (browser) {
-            case "ie":
-                return "11.0";
-            case "chrome":
-                return "51.0";
-            case "edge":
-                return "20.10240";
-            case "safari":
-                String version;
-                if (remoteOS == null)
-                    version = "9.0";
-                else if (remoteOS.contains("10.11"))
-                    version = "9.0";
-                else if (remoteOS.contains("10.10"))
-                    version = "8.0";
-                else if (remoteOS.contains("10.9"))
-                    version = "7.0";
-                else if (remoteOS.contains("10.8"))
-                    version = "6.0";
-                else
-                    version = "0";
-                return version;
-            default:
-                // assume firefox
-                return "45.0";
-        }
-    }
-
-    public static WebDriver initDriverWithProxy() {
-        if (browsermobServer != null) {
-            System.err.println("-->Aborting prev proxy server:" + browsermobServer.getPort());
-            try {
-                browsermobServer.abort();
-            } catch (Exception ex) {
-                System.err.println("-->Failed to abort prev proxy server:" + browsermobServer.getPort());
-            }
-        }
-
-        System.out.print("Initializing proxy server...");
-        int port = 7000;
-        boolean found = false;
-        for (int i = 0; i < 10; i++) {
-            try {
-                browsermobServer = new BrowserMobProxyServer();
-                browsermobServer.start(port);
-                System.out.println("using port " + port);
-                found = true;
-                break;
-            } catch (Exception ex) {
-                System.out.println("port " + port + " is in use:" + ex.getMessage());
-                port++;
-            }
-        }
-        if (!found) {
-            System.out.println("Cannot find open port for proxy server");
-            System.out.println("Abort run.");
-            System.exit(-1);
-        }
-
-        Proxy seleniumProxy = ClientUtil.createSeleniumProxy(browsermobServer);
-        DesiredCapabilities capabilities = initCapabilities();
-        capabilities.setCapability(CapabilityType.PROXY, seleniumProxy);
-        WebDriver driver = initDriver(capabilities);
-        browsermobServer.newHar(browsermobServerHarTs);
-        browsermobServer.addRequestFilter(new ProxyFilters.ProxyRequestFilter(url));
-        browsermobServer.addResponseFilter(new ProxyFilters.ProxyResponseFilter());
-        return driver;
     }
 
     private static boolean findScenario(ArrayList<Map> featureScenarios, String scenarioPath, int line) {
@@ -759,14 +597,13 @@ public class MainRunner extends AbstractTestNGCucumberTests {
                 hscenario.put(l, element);
             }
         }
-        System.out.println("Cannot find scenario with line:" + line);
         int closest = 0;
-        for (Integer l : hscenario.keySet()){
+        for (Integer l : hscenario.keySet()) {
             int dist = Math.abs(line - l);
             if (dist < line - closest)
                 closest = l;
         }
-        if (closest > 0){
+        if (closest > 0) {
             features.put(scenarioPath + ":" + line, hscenario.get(closest));
             System.out.println("Load closest scenario with line:" + closest);
         }
@@ -777,7 +614,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
     private static void close() {
         if (browser.equals("none"))
             return;
-        if (useSaucelabs) {
+        if (useSauceLabs) {
             if (driver instanceof RemoteWebDriver)
                 System.out.println("Link to your job: https://saucelabs.com/jobs/" + ((RemoteWebDriver) driver).getSessionId());
             driverQuit();
@@ -791,32 +628,66 @@ public class MainRunner extends AbstractTestNGCucumberTests {
     private static void driverQuit() {
         try {
             driver.quit();
+            if (ie()) {
+                try {
+                    driver.quit();
+                } catch (Exception | Error e) {
+                    // nothing we can do if this doesn't work
+                }
+            }
         } catch (Exception e) {
+            // skip error message on saucelab remote driver
+            if (!useSauceLabs) {
+                System.err.println("Error closing driver. You may need to clean up execution machine. error: " + e);
+            }
         }
+        driver = null;
     }
 
-    private static String getCurrentUrl() {
-        // IE windows authentication popup disapears when driver.getCurrentUrl() executed
-        // so need to hook the function and wait for 10 seconds to look for the IE window authentication popup
-        // and repeat every 1 hour
-        long cs = System.currentTimeMillis();
-        // check first 10 seconds only
-        if (cs - ieAuthenticationTs < 10000) {
-            if (browser.equals("ie")
-                    && getExParams("require_authentication") != null
-                    && getExParams("require_authentication").equals("true")) {
-                // check IE window authentication popup
-                int exit_value = runIEMethod();
-                // IE authentication popup login successfully, no more checking unitl next hour
-                if (exit_value == 0)
-                    ieAuthenticationTs -= 10000;
-            }
-        } else {
-            // after that check every hour
-            if (cs - ieAuthenticationTs > 3600000)
-                ieAuthenticationTs = cs;
+    /**
+     * Get the current URL from browser and/or URL param
+     *
+     * @return the current url the browser is on
+     */
+    public static String getCurrentUrl() {
+        if (!driverInitialized()) {
+            return url;
         }
-        return (driver.getCurrentUrl());
+        String curUrl = driver.getCurrentUrl();
+        if (curUrl.matches(".*?data.*?")) {
+            return url;
+        }
+        currentURL = curUrl;
+        return curUrl;
+    }
+
+    /**
+     * Get the current URL from browser and/or URL param
+     */
+    private static String getInternalCurrentUrl() {
+        if (StepUtils.ie()) {
+            // IE windows authentication popup disappears when driver.getCurrentUrl() executed
+            // so need to hook the function and wait for 10 seconds to look for the IE window authentication popup
+            // and repeat every 1 hour
+            long cs = System.currentTimeMillis();
+            // check first 10 seconds only
+            if (cs - ieAuthenticationTs < 10000) {
+                if (browser.equals("ie") && booleanParam("require_authentication")) {
+                    // check IE window authentication popup
+                    int exitValue = runIEMethod();
+                    // IE authentication popup login successfully, no more checking for an hour
+                    if (exitValue == 0) {
+                        ieAuthenticationTs -= 10000;
+                    }
+                }
+            } else {
+                // after that check every hour
+                if (cs - ieAuthenticationTs > 3600000) {
+                    ieAuthenticationTs = cs;
+                }
+            }
+        }
+        return getCurrentUrl();
     }
 
     /**
@@ -865,16 +736,16 @@ public class MainRunner extends AbstractTestNGCucumberTests {
 
         public AuthenticationDialog() {
             String os_name = System.getProperty("os.name").toLowerCase();
-            if (getExParams("require_authentication") == null) {
+            if (getExParam("require_authentication") == null) {
                 System.out.println("AuthenticationDialog not required: "
-                        + getExParams("require_authentication"));
+                        + getExParam("require_authentication"));
                 return;
             }
             if (!(Utils.isWindows() && browser.equals("firefox")) &&
                     !(Utils.isWindows() && browser.equals("chrome")) &&
                     !(Utils.isOSX() && browser.equals("safari"))) {
                 System.out.println("AuthenticationDialog not required:"
-                        + getExParams("require_authentication")
+                        + getExParam("require_authentication")
                         + ":" + os_name
                         + ":" + browser);
                 return;
@@ -1015,6 +886,94 @@ public class MainRunner extends AbstractTestNGCucumberTests {
                 m_socketMutex.accept();
             } catch (IOException e) {
                 m_socketMutex = null;
+            }
+        }
+    }
+
+    public static class PageHangWatchDog extends Thread {
+        private final static long TIMEOUT = (StepUtils.safari() || StepUtils.ie() ? 130 : 95) * 1000;
+        private final static int MAX_FAILURES = 5;
+        public static boolean timedOut = false;
+        private static PageHangWatchDog hangWatchDog;
+        private static int failCount;
+        private static boolean pause;
+        private String m_url;
+        private long ts;
+
+        private PageHangWatchDog() {
+            System.err.println("--> Start:PageHangWatchDog:" + new Date());
+            this.reset(getWebDriver().getCurrentUrl());
+            this.start();
+        }
+
+        public static void init() {
+            if (hangWatchDog == null) {
+                hangWatchDog = new PageHangWatchDog();
+            }
+        }
+
+        public static void resetWatchDog() {
+            hangWatchDog.reset(null);
+        }
+
+        public static void pause(boolean pause) {
+            PageHangWatchDog.pause = pause;
+            if (!pause) {
+                timedOut = false;
+                failCount = 0;
+            }
+        }
+
+        private void reset(String url) {
+            this.ts = System.currentTimeMillis();
+            if (url != null) {
+                this.m_url = url;
+                failCount = 0;
+            }
+        }
+
+        public void run() {
+            while (true) {
+                try {
+                    if (pause || timedOut || !driverInitialized()) {
+                        continue;
+                    }
+                    String url = currentURL;
+                    //System.err.println("Watchdog tick:\n>old url: " + this.m_url + "\n>new url: " + url);
+                    if (url.contains("about:blank")) {
+                        continue;
+                    }
+                    if (url.equals(this.m_url)) {
+                        if (System.currentTimeMillis() - this.ts > TIMEOUT) {
+                            System.err.println("--> PageHangWatchDog: timeout at " + this.m_url +
+                                    ", " + (MAX_FAILURES - failCount) + " failures until exit");
+                            failCount++;
+                            new Thread(() -> {
+                                try {
+                                    stopPageLoad();
+                                } catch (Exception e) {
+                                    // sometimes IE fails to run js. Continue running.
+                                } finally {
+                                    Navigate.browserRefresh();
+                                }
+                            }).start();
+
+                            this.reset(null);
+                            if (failCount > MAX_FAILURES) {
+                                timedOut = true;
+                                System.err.println("PageHangWatchDog timeout! Test will fail after this step ends");
+                            }
+                        }
+                    } else {
+                        this.reset(url);
+                    }
+                } catch (Throwable ex) {
+                    System.err.println("--> Error:PageHangWatchDog:" + ex.getMessage());
+                    ex.printStackTrace();
+                } finally {
+                    //System.err.print(pause ? "|" : "~");
+                    Utils.threadSleep(5000, this.getClass().getSimpleName());
+                }
             }
         }
     }

@@ -35,6 +35,8 @@ import org.apache.http.protocol.HttpContext;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -54,6 +56,16 @@ import java.util.concurrent.TimeUnit;
  */
 @SuppressWarnings("deprecation")
 public class Utils {
+
+    public static PrintStream errLog = null;
+    public static PrintStream infoLog = null;
+    public static Logger log = LoggerFactory.getLogger(db.framework.utils.Utils.class);
+    // use these to redirect unneeded error output
+    private static PrintStream originalErr = System.err;
+    private static PrintStream originalInfo = System.out;
+    private static int errRedirectCalls = 0;
+    private static int infoRedirectCalls = 0;
+    private static boolean resourcesExtracted = false;
 
     /**
      * Executes a command on the command line (cmd for windows, else bash)
@@ -325,7 +337,7 @@ public class Utils {
      * @return json string
      */
     @SuppressWarnings("deprecation")
-    public static String gherkinTojson(boolean isPretty, String path) {
+    public static String gherkinToJson(boolean isPretty, String path) {
         // Define Feature file and JSON File path.
         String gherkin = null;
         try {
@@ -350,7 +362,7 @@ public class Utils {
         parser.parse(gherkin, path, 0);
         formatter.done();
         formatter.close();
-//		System.out.println("json output: n" + json + "'");
+        //		System.out.println("json output: n" + json + "'");
         return json.toString();
     }
 
@@ -494,7 +506,7 @@ public class Utils {
 
         // project data
         String full_path = getResourcePath(fname);
-        String path = resPath + MainRunner.project.replace(".", "/") + "/resources/data/" + full_path;
+        String path = resPath + MainRunner.projectDir.replace(".", "/") + "/resources/data/" + full_path;
         File resource = new File(path);
         if (resource.exists() && !resource.isDirectory()) {
             return resource;
@@ -519,7 +531,7 @@ public class Utils {
         return "other/" + fName;
     }
 
-    protected static String listToString(List<String> list, String token, String[] cleans) {
+    public static String listToString(List<String> list, String token, String[] cleans) {
         if (cleans != null) {
             for (int i = list.size() - 1; i >= 0; i--) {
                 String s = list.get(i);
@@ -530,8 +542,9 @@ public class Utils {
                         break;
                     }
                 }
-                if (clean)
+                if (clean) {
                     list.remove(i);
+                }
             }
         }
         return String.join(token, list.toArray(new String[list.size()]));
@@ -1059,6 +1072,103 @@ public class Utils {
                 System.out.println("--> ProcessWatchDog.destroyForcibly():" + this.m_name + ":" + this.m_timeout);
                 this.m_process.destroyForcibly();
             }
+        }
+    }
+
+    /**
+     * Initializes the PrintStream used to redirect any error message bloat
+     */
+    private static void initLogs() {
+        if (errLog == null || infoLog == null) {
+            try {
+                File errFile = new File(MainRunner.workspace + "logs/sdt-error.log");
+                File infoFile = new File(MainRunner.workspace + "logs/sdt-info.log");
+                createDirectory(MainRunner.workspace + "logs");
+                if (!errFile.exists()) {
+                    if (!errFile.createNewFile()) {
+                        System.err.println("Could not create error log file");
+                    }
+                }
+                if (!infoFile.exists()) {
+                    if (!infoFile.createNewFile()) {
+                        System.err.println("Could not create info log file");
+                    }
+                }
+                FileOutputStream errStream = new FileOutputStream(errFile);
+                FileOutputStream infoStream = new FileOutputStream(infoFile);
+                errLog = new PrintStream(errStream);
+                infoLog = new PrintStream(infoStream);
+            } catch (IOException e) {
+                System.err.println("Error while creating file: " + e);
+            }
+        }
+    }
+
+    /**
+     * Redirects System.out prints to the log files to avoid console clutter
+     * <p>
+     * Maintains a call count with resetSOut so redirects/resets below
+     * each other don't mess each other up.
+     * </p>
+     */
+    public static void redirectSOut() {
+        if (infoLog == null) {
+            initLogs();
+        }
+        if (infoLog != null) {
+            System.setOut(infoLog);
+            infoRedirectCalls++;
+        }
+    }
+
+    /**
+     * Sets System.Out back to the console
+     * <p>
+     * Maintains a call count with redirectSOut so redirects/resets below
+     * each other don't mess each other up.
+     * </p>
+     */
+    public static void resetSOut() {
+        infoRedirectCalls--;
+        if (infoRedirectCalls < 0) {
+            infoRedirectCalls = 0;
+        }
+        if (infoRedirectCalls == 0) {
+            System.setOut(originalInfo);
+        }
+    }
+
+    /**
+     * Redirects System.err prints to the log files to avoid console clutter
+     * <p>
+     * Maintains a call count with resetSErr so redirects/resets below
+     * each other don't mess each other up.
+     * </p>
+     */
+    public static void redirectSErr() {
+        if (errLog == null) {
+            initLogs();
+        }
+        if (errLog != null) {
+            System.setErr(errLog);
+            errRedirectCalls++;
+        }
+    }
+
+    /**
+     * Sets System.err back to the console
+     * <p>
+     * Maintains a call count with redirectSErr so redirects/resets below
+     * each other don't mess each other up.
+     * </p>
+     */
+    public static void resetSErr() {
+        errRedirectCalls--;
+        if (errRedirectCalls < 0) {
+            errRedirectCalls = 0;
+        }
+        if (errRedirectCalls == 0) {
+            System.setErr(originalErr);
         }
     }
 }

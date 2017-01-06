@@ -50,8 +50,8 @@ public class PageUtils {
         String resPath = "/resources/elements/" + path + ".json";
 
         // project elements first
-        if (MainRunner.project != null) {
-            path = resRepoPath + MainRunner.project.replace(".", "/") + resPath;
+        if (MainRunner.projectDir != null) {
+            path = resRepoPath + MainRunner.projectDir.replace(".", "/") + resPath;
             loadOnePageJSONFile(pagePath, path, "project");
 
             // also load panel elements
@@ -72,8 +72,8 @@ public class PageUtils {
         }
 
         // project elements first
-        if (MainRunner.project != null) {
-            path = resRepoPath + MainRunner.project.replace(".", "/") + resPath;
+        if (MainRunner.projectDir != null) {
+            path = resRepoPath + MainRunner.projectDir.replace(".", "/") + resPath;
             loadOnePageJSONFile(pagePath, path, "project");
 
             // also load panel elements
@@ -257,7 +257,7 @@ public class PageUtils {
         if (elementString == null)
             return null;
 
-        return element.parseResult(elementString);
+        return String.valueOf(element.parseValue(elementString));
     }
 
     // get element value from JSON object in memory
@@ -328,7 +328,7 @@ public class PageUtils {
     }
 
     // make 'home' or 'panel.home' to 'website.mcom.page.home' or 'website.mcom.panel.home'
-    private static String getPageFullPath(String pageName) {
+    public static String getPageFullPath(String pageName) {
         String pagePath = "";
         if (pageName.contains("panels."))
             pagePath = pagePath + pageName;

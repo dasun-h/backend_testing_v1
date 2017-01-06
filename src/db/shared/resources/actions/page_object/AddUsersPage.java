@@ -4,6 +4,12 @@ import org.junit.Assert;
 import db.shared.utils.CommonUtils;
 import db.framework.utils.StepUtils;
 
+import static db.framework.interactions.Clicks.javascriptClick;
+import static db.framework.interactions.Elements.element;
+import static db.framework.interactions.Elements.getText;
+import static db.framework.interactions.TextBoxes.typeTextbox;
+import static db.framework.interactions.Wait.untilElementPresent;
+
 public class AddUsersPage extends StepUtils {
 
     public static String firstName = CommonUtils.generateRandomFirstName();
@@ -17,8 +23,8 @@ public class AddUsersPage extends StepUtils {
         typeTextbox(element("add_users.email"), Email);
         typeTextbox(element("add_users.contact_id"), contactID);
         javascriptClick(element("add_users.create_new_record_btn"));
-        Assert.assertTrue("ERROR: Record not added to the database", waitUntilElementPresent(element("add_users.success_msg")));
-        String success_msg = getElementText(element("add_users.success_msg"));
+        Assert.assertTrue("ERROR: Record not added to the database", untilElementPresent(element("add_users.success_msg")));
+        String success_msg = getText(element("add_users.success_msg"));
         if (success_msg.equals("WOW! Record was inserted successfully HOME!"))
             System.out.print("WOW! Record was inserted successfully");
         else {

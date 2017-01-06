@@ -1,5 +1,6 @@
 package db.framework.utils;
 
+import db.framework.interactions.Navigate;
 import db.framework.runner.MainRunner;
 import org.openqa.selenium.Cookie;
 import org.openqa.selenium.WebDriver;
@@ -21,7 +22,7 @@ public class Cookies {
      * @param value value of the cookie
      */
     public static void addCookieJavascript(String name, String value) {
-        StepUtils.execJavascript("document.cookie = '" + name + "=" + value + "'");
+        Navigate.execJavascript("document.cookie = '" + name + "=" + value + "'");
     }
 
     /**
@@ -38,7 +39,7 @@ public class Cookies {
             calendar.add(Calendar.DATE, 5);
             expiry = calendar.getTime();
         }
-        StepUtils.execJavascript("document.cookie = '" + name + "=" + value + "; path=" + path + "; expires=" + expiry.toGMTString() + "; domain=" + domain + "'");
+        Navigate.execJavascript("document.cookie = '" + name + "=" + value + "; path=" + path + "; expires=" + expiry.toGMTString() + "; domain=" + domain + "'");
     }
 
     /**
@@ -47,7 +48,7 @@ public class Cookies {
      * @param name name of cookie to delete
      */
     public static void deleteCookieJavascript(String name) {
-        StepUtils.execJavascript("document.cookie = '" + name + "=; expires=Thu, 18 Dec 2013 12:00:00 UTC'");
+        Navigate.execJavascript("document.cookie = '" + name + "=; expires=Thu, 18 Dec 2013 12:00:00 UTC'");
     }
 
     /**
@@ -102,7 +103,7 @@ public class Cookies {
      */
     public static void deleteAllCookiesJavascript() {
         resetIshipCookie();
-        StepUtils.execJavascript(
+        Navigate.execJavascript(
                 "var cookies=document.cookie.split(';');for (var i=0; i<cookies.length; i++){var spcook=cookies[i].split('=');console.log(spcook[0]);document.cookie=spcook[0]+'='+spcook[1]+'; expires=Thu, 21 Sep 1979 00:00:01 UTC; domain=" + domain + "; path=/';}");
     }
 

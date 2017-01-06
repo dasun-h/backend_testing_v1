@@ -4,6 +4,12 @@ import org.junit.Assert;
 import db.shared.utils.CommonUtils;
 import db.framework.utils.StepUtils;
 
+import static db.framework.interactions.Clicks.javascriptClick;
+import static db.framework.interactions.Elements.element;
+import static db.framework.interactions.Elements.getText;
+import static db.framework.interactions.TextBoxes.typeTextbox;
+import static db.framework.interactions.Wait.untilElementPresent;
+
 public class EditUsersPage extends StepUtils {
     public static String edit_firstName = CommonUtils.generateRandomFirstName();
     public static String edit_lastName = CommonUtils.generateRandomLastName();
@@ -16,8 +22,8 @@ public class EditUsersPage extends StepUtils {
         typeTextbox(element("edit_users.edit_email"), edit_Email);
         typeTextbox(element("edit_users.edit_contact_id"), edit_contactID);
         javascriptClick(element("edit_users.edit_record_btn"));
-        Assert.assertTrue("ERROR: Record was not edited in to the database", waitUntilElementPresent(element("edit_users.edit_success_msg")));
-        String success_msg = getElementText(element("edit_users.edit_success_msg"));
+        Assert.assertTrue("ERROR: Record was not edited in to the database", untilElementPresent(element("edit_users.edit_success_msg")));
+        String success_msg = getText(element("edit_users.edit_success_msg"));
         if (success_msg.equals("WOW! Record was updated successfully HOME!"))
             System.out.print("WOW! Record was updated successfully");
         else{

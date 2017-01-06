@@ -3,7 +3,6 @@
     "panel.header",
     "panel.footer"
   ],
-  "url": "http://10.101.15.48:8080/dbtest/",
   "add_users_btn": "cssSelector, .btn.btn-large.btn-info",
   "added_users_tbl": "cssSelector, .table.table-bordered.table-responsive",
   "table_row": "cssSelector, .container>table>tbody>tr>td",

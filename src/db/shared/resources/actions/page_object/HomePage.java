@@ -6,6 +6,13 @@ import db.framework.utils.StepUtils;
 
 import java.util.*;
 
+import static db.framework.interactions.Clicks.click;
+import static db.framework.interactions.Clicks.clickIfPresent;
+import static db.framework.interactions.Elements.element;
+import static db.framework.interactions.Elements.findElements;
+import static db.framework.interactions.Elements.getIndexedText;
+import static db.framework.interactions.Wait.untilElementPresent;
+
 
 public class HomePage extends StepUtils {
 
@@ -16,18 +23,18 @@ public class HomePage extends StepUtils {
     public static void transactions(String transaction_type_btn) throws Throwable {
         switch (transaction_type_btn.toLowerCase()) {
             case "add users":
-                clickIfPresent(element("home.add_users_btn"), 2000);
-                Assert.assertTrue("ERROR: Page is not loaded successfully", waitUntilElementPresent(element("add_users.create_new_record_btn")));
+                clickIfPresent(element("home.add_users_btn"));
+                Assert.assertTrue("ERROR: Page is not loaded successfully", untilElementPresent(element("add_users.create_new_record_btn")));
                 break;
             case "update users":
-                record_id = getElementsText(element("home.table_row"), 0);
-                clickIfPresent(element("home.update_link"), 2000);
-                Assert.assertTrue("ERROR: Page is not loaded successfully", waitUntilElementPresent(element("edit_users.edit_record_btn")));
+                record_id = getIndexedText(element("home.table_row"), 0);
+                clickIfPresent(element("home.update_link"));
+                Assert.assertTrue("ERROR: Page is not loaded successfully", untilElementPresent(element("edit_users.edit_record_btn")));
                 break;
             case "delete users":
-                record_id = getElementsText(element("home.table_row"), 0);
-                clickIfPresent(element("home.remove_link"), 2000);
-                Assert.assertTrue("ERROR: Page is not loaded successfully", waitUntilElementPresent(element("delete_users.remove_confirmation_btn")));
+                record_id = getIndexedText(element("home.table_row"), 0);
+                clickIfPresent(element("home.remove_link"));
+                Assert.assertTrue("ERROR: Page is not loaded successfully", untilElementPresent(element("delete_users.remove_confirmation_btn")));
                 break;
             default:
                 Assert.fail("Unable to find your button action type");
@@ -38,7 +45,7 @@ public class HomePage extends StepUtils {
         List<String> ui_user_info = new ArrayList<String>(Arrays.asList());
         int recordCount = findElements(element("home.table_row")).size();
         for (int i = 1; i < recordCount; i++) {
-            String row_value = getElementsText(element("home.table_row"), i);
+            String row_value = getIndexedText(element("home.table_row"), i);
             ui_user_info.add(row_value);
         }
         ui_user_info.removeAll(Collections.singleton(""));
@@ -60,11 +67,11 @@ public class HomePage extends StepUtils {
 
     public static void removeRecordsFromDB() throws Throwable {
         for (int i = 0; i < findElements(element("home.remove_link")).size(); ) {
-            click(findElements(element("home.remove_link")).get(i), 3000);
-            click(element("delete_users.remove_confirmation_btn"), 3000);
-            click(element("delete_users.back_to_index_btn"), 3000);
+            click(findElements(element("home.remove_link")).get(i));
+            click(element("delete_users.remove_confirmation_btn"));
+            click(element("delete_users.back_to_index_btn"));
         }
-        Assert.assertTrue("ERROR: Still you have not deleted records left in the data base", getElementsText(element("home.table_row"), 0).contains("Nothing here..."));
+        Assert.assertTrue("ERROR: Still you have not deleted records left in the data base", getIndexedText(element("home.table_row"), 0).contains("Nothing here..."));
     }
 
     public static void verifyAddedRecordsWithDB() throws Throwable {
@@ -89,7 +96,7 @@ public class HomePage extends StepUtils {
         List<String> ui_user_info = new ArrayList<String>(Arrays.asList());
         int recordCount = findElements(element("home.table_row")).size();
         for (int i = 1; i < recordCount; i++) {
-            String row_value = getElementsText(element("home.table_row"), i);
+            String row_value = getIndexedText(element("home.table_row"), i);
             ui_user_info.add(row_value);
         }
         ui_user_info.removeAll(Collections.singleton(""));

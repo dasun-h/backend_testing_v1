@@ -16,12 +16,12 @@ import java.util.Map;
 
 
 public class DBFormatter implements Reporter, Formatter {
-    private final List<Map<String, Object>> featureMaps = new ArrayList<Map<String, Object>>();
+    private final List<Map<String, Object>> featureMaps = new ArrayList<>();
     private final NiceAppendable out;
 
     private Map<String, Object> featureMap;
     private String uri;
-    private List<Map> beforeHooks = new ArrayList<Map>();
+    private List<Map> beforeHooks = new ArrayList<>();
     private File m_fcucumberJson = new File(MainRunner.logs + "cucumber.json");
 
     public DBFormatter(Appendable out) {
@@ -63,7 +63,7 @@ public class DBFormatter implements Reporter, Formatter {
         getFeatureElements().add(scenario.toMap());
         if (beforeHooks.size() > 0) {
             getFeatureElement().put("before", beforeHooks);
-            beforeHooks = new ArrayList<Map>();
+            beforeHooks = new ArrayList<>();
         }
     }
 
@@ -89,7 +89,7 @@ public class DBFormatter implements Reporter, Formatter {
 
     @Override
     public void embedding(String mimeType, byte[] data) {
-        final Map<String, String> embedding = new HashMap<String, String>();
+        final Map<String, String> embedding = new HashMap<>();
         embedding.put("mime_type", mimeType);
         embedding.put("data", Base64.encodeBytes(data));
         getEmbeddings().add(embedding);
@@ -102,11 +102,16 @@ public class DBFormatter implements Reporter, Formatter {
 
     @Override
     public void result(Result result) {
-        if (!result.getStatus().equals("passed"))
-            System.err.println(" --> " + result.getStatus().toUpperCase());
-        HashMap map = new HashMap(result.toMap());
         if (!result.getStatus().equals("passed")) {
-            String screenShot = Utils.getScenarioShaKey(this.uri, ":" + this.getSteps().size()) + ".png";
+            System.err.println(" --> " + result.getStatus().toUpperCase());
+        }
+        HashMap<String, Object> map = new HashMap<>(result.toMap());
+        if (!result.getStatus().equals("passed")) {
+            String tempUri = this.uri;
+            if (ScenarioHelper.isScenarioOutline()) {
+                tempUri += ScenarioHelper.outlineCount;
+            }
+            String screenShot = Utils.getScenarioShaKey(tempUri, ":" + this.getSteps().size()) + ".png";
             StepUtils.browserScreenCapture(screenShot);
             map.put("screen_shot", screenShot);
         }
@@ -122,7 +127,7 @@ public class DBFormatter implements Reporter, Formatter {
     public void after(Match match, Result result) {
         List<Map> hooks = getFeatureElement().get("after");
         if (hooks == null) {
-            hooks = new ArrayList<Map>();
+            hooks = new ArrayList<>();
             getFeatureElement().put("after", hooks);
         }
         hooks.add(buildHookMap(match, result));
@@ -151,7 +156,7 @@ public class DBFormatter implements Reporter, Formatter {
 
     @Override
     public void done() {
-        HashMap job = new HashMap();
+        HashMap<String, Object> job = new HashMap<>();
         job.put("run", featureMaps);
         job.put("environment_variables", System.getenv());
         job.put("start_time", MainRunner.startTime);
@@ -183,13 +188,13 @@ public class DBFormatter implements Reporter, Formatter {
     private List<Map<String, Object>> getFeatureElements() {
         List<Map<String, Object>> featureElements = (List) featureMap.get("elements");
         if (featureElements == null) {
-            featureElements = new ArrayList<Map<String, Object>>();
+            featureElements = new ArrayList<>();
             featureMap.put("elements", featureElements);
         }
         return featureElements;
     }
 
-    private Map<Object, List<Map>> getFeatureElement() {
+    private Map<String, List<Map>> getFeatureElement() {
         if (getFeatureElements().size() > 0) {
             return (Map) getFeatureElements().get(getFeatureElements().size() - 1);
         } else {
@@ -200,7 +205,7 @@ public class DBFormatter implements Reporter, Formatter {
     private List<Map> getAllExamples() {
         List<Map> allExamples = getFeatureElement().get("examples");
         if (allExamples == null) {
-            allExamples = new ArrayList<Map>();
+            allExamples = new ArrayList<>();
             getFeatureElement().put("examples", allExamples);
         }
         return allExamples;
@@ -209,7 +214,7 @@ public class DBFormatter implements Reporter, Formatter {
     private List<Map> getSteps() {
         List<Map> steps = getFeatureElement().get("steps");
         if (steps == null) {
-            steps = new ArrayList<Map>();
+            steps = new ArrayList<>();
             getFeatureElement().put("steps", steps);
         }
         return steps;
@@ -218,7 +223,7 @@ public class DBFormatter implements Reporter, Formatter {
     private List<Map<String, String>> getEmbeddings() {
         List<Map<String, String>> embeddings = (List<Map<String, String>>) getCurrentStep(Phase.embedding).get("embeddings");
         if (embeddings == null) {
-            embeddings = new ArrayList<Map<String, String>>();
+            embeddings = new ArrayList<>();
             getCurrentStep(Phase.embedding).put("embeddings", embeddings);
         }
         return embeddings;

@@ -19,10 +19,12 @@ import java.io.IOException;
 public class EnvironmentVariableRetriever {
 
     public static String BROWSER;
-    public static String SAUCE_LABS;
+    public static String SAUCE_USER;
+    public static String SAUCE_KEY;
     public static String OPERATING_SYSTEM;
     public static String SCENARIOS;
     public static String TAGS;
+    public static String WEBSITE;
 
     static {
         try {
@@ -49,33 +51,23 @@ public class EnvironmentVariableRetriever {
         DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
         Document doc = dBuilder.parse(fXmlFile);
         doc.getDocumentElement().normalize();
-
-        System.out.println("Root element :" + doc.getDocumentElement().getNodeName());
-
+        System.out.println("--------------------------------------------");
+        System.out.println(doc.getDocumentElement().getNodeName() + " Selected are:");
+        System.out.println("--------------------------------------------");
         NodeList nList = doc.getElementsByTagName("environment_variables");
 
-        System.out.println("----------------------------");
-
         for (int temp = 0; temp < nList.getLength(); temp++) {
-
             Node nNode = nList.item(temp);
-
-            System.out.println("\nCurrent Element :" + nNode.getNodeName());
-
             if (nNode.getNodeType() == Node.ELEMENT_NODE) {
 
                 Element eElement = (Element) nNode;
-                System.out.println(eElement.getAttribute("name"));
-                BROWSER = eElement.getElementsByTagName("ori_browser").item(0).getTextContent();
-                System.out.println(eElement.getAttribute("ori_browser"));
-                SAUCE_LABS = eElement.getElementsByTagName("saucelabs").item(0).getTextContent();
-                System.out.println(eElement.getElementsByTagName("saucelabs").item(0).getTextContent());
+                SAUCE_USER = eElement.getElementsByTagName("sauce_user").item(0).getTextContent();
+                SAUCE_KEY = eElement.getElementsByTagName("sauce_key").item(0).getTextContent();
                 OPERATING_SYSTEM = eElement.getElementsByTagName("os").item(0).getTextContent();
-                System.out.println(eElement.getElementsByTagName("os").item(0).getTextContent());
                 SCENARIOS = eElement.getElementsByTagName("scenarios").item(0).getTextContent();
-                System.out.println(eElement.getElementsByTagName("scenarios").item(0).getTextContent());
                 TAGS = eElement.getElementsByTagName("tags").item(0).getTextContent();
-                System.out.println(eElement.getElementsByTagName("tags").item(0).getTextContent());
+                WEBSITE = eElement.getElementsByTagName("website").item(0).getTextContent();
+                BROWSER = eElement.getElementsByTagName("browser").item(0).getTextContent();
             }
         }
     }

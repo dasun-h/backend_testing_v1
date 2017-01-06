@@ -1,0 +1,7 @@
+{
+  "url": "https://www.google.com",
+  "verify_page": "id, hplogo",
+  "logo_sub_txt": "cssSelector, .logo-subtext",
+  "search_text_box": "id, sb_ifc0",
+  "search_btn": "xpath, //input[@name='btnK']"
+}

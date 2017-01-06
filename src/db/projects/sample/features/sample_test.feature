@@ -1,3 +1,6 @@
-Feature: TOD0
+Feature: Sample
 
-  Scenario: TODO
+  @scenario1
+  Scenario: Google Page Load
+    Given I visit the google home page
+    And I verify google home page

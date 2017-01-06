@@ -4,6 +4,7 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import db.framework.interactions.Navigate;
 import org.junit.Assert;
 import db.shared.resources.actions.page_object.AddUsersPage;
 import db.shared.resources.actions.page_object.EditUsersPage;
@@ -14,6 +15,13 @@ import db.shared.utils.database.models.CustomerService;
 import java.util.Arrays;
 import java.util.List;
 
+import static db.framework.interactions.Clicks.click;
+import static db.framework.interactions.Clicks.javascriptClick;
+import static db.framework.interactions.Elements.element;
+import static db.framework.interactions.Elements.getIndexedText;
+import static db.framework.interactions.Elements.getText;
+import static db.framework.interactions.Wait.untilElementPresent;
+
 public class DB_Tester extends StepUtils {
 
     public static List<String> customerInformationDB;
@@ -21,8 +29,8 @@ public class DB_Tester extends StepUtils {
 
     @Given("^I visit the crud site home page$")
     public void I_visit_the_crud_site_home_page() throws Throwable {
-        visit("home");
-        Assert.assertTrue("ERROR: CRUD Home page is not loaded properly", waitUntilElementPresent(element("home.add_users_btn")));
+        Navigate.visit("home");
+        Assert.assertTrue("ERROR: CRUD Home page is not loaded properly", untilElementPresent(element("home.add_users_btn")));
     }
 
     @When("^I navigate to the \"([^\"]*)\" page$")
@@ -42,15 +50,15 @@ public class DB_Tester extends StepUtils {
                 javascriptClick(element("edit_users.cancel_btn"));
                 break;
             case "delete":
-                click(element("delete_users.remove_confirmation_btn"), 3000);
-                String success_msg = getElementText(element("delete_users.remove_success_message"));
+                click(element("delete_users.remove_confirmation_btn"));
+                String success_msg = getText(element("delete_users.remove_success_message"));
                 if (success_msg.equals("Success! record was deleted..."))
                     System.out.print("Success! record was deleted...");
                 else {
                     Assert.fail("ERROR-Application: Record was not deleted");
                 }
-                click(element("delete_users.back_to_index_btn"), 3000);
-                Assert.assertTrue("ERROR: Still you have not deleted records left in the data base", getElementsText(element("home.table_row"), 0).contains("Nothing here..."));
+                click(element("delete_users.back_to_index_btn"));
+                Assert.assertTrue("ERROR: Still you have not deleted records left in the data base", getIndexedText(element("home.table_row"), 0).contains("Nothing here..."));
                 break;
             default:
                 Assert.fail("Unable to find your action type");
@@ -64,7 +72,7 @@ public class DB_Tester extends StepUtils {
 
     @And("^I remove all the initial test data from database$")
     public void I_remove_all_the_initial_test_data_from_database() throws Throwable {
-        if (getElementText(element("home.table_row")).contains("Nothing here...")) {
+        if (getText(element("home.table_row")).contains("Nothing here...")) {
             System.out.print("No Records found for delete");
         } else {
             HomePage.removeRecordsFromDB();

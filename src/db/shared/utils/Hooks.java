@@ -1,29 +1,34 @@
 package db.shared.utils;
 
+import db.framework.runner.MainRunner;
+import db.framework.utils.*;
 import cucumber.api.Scenario;
 import cucumber.api.java.After;
 import cucumber.api.java.Before;
-import db.framework.runner.MainRunner;
-import db.framework.utils.RunFeature;
-import db.framework.utils.StepUtils;
-import db.framework.utils.Utils;
 import gherkin.formatter.model.Result;
+import org.junit.Assert;
+
 import java.util.Map;
+
+import static db.framework.utils.ScenarioHelper.*;
 
 public class Hooks extends StepUtils {
 
     private SingletonScenario singletonScenario;
-    private String resetBrowser = MainRunner.getExParams("reset_browser");
+    private boolean keepBrowser = MainRunner.booleanParam("keep_browser");
     private long scenarioStartTime;
     private long stepStartTime;
+    private boolean scenarioSetupComplete = false;
+    private static boolean isBackground = false;
 
     private Map getScenarioInfo(Scenario scenario) {
         for (Object key : MainRunner.features.keySet()) {
             String scenarioKey = key.toString();
-            if (MainRunner.features.get(scenarioKey) instanceof Map) {
-                Map scenarioInfo = (Map) MainRunner.features.get(scenarioKey);
-                if (scenarioInfo.get("name").equals(scenario.getName()))
+            if (MainRunner.features.get(scenarioKey) != null) {
+                Map scenarioInfo = MainRunner.features.get(scenarioKey);
+                if (scenarioInfo.get("name").equals(scenario.getName())) {
                     return scenarioInfo;
+                }
             }
         }
         return null;
@@ -32,58 +37,75 @@ public class Hooks extends StepUtils {
     @Before
     public void beforeScenario(Scenario scenario) {
         if (RunFeature.checkAborted()) {
-            System.exit(-1);
+            Assert.fail("Run has been aborted");
         }
         // make sure driver is initialized
         MainRunner.getWebDriver();
 
         scenarioStartTime = System.currentTimeMillis();
-        this.init(scenario);
+        init(scenario);
         Map sinfo = getScenarioInfo(scenario);
         String line = "";
-        if (sinfo != null)
+        if (sinfo != null) {
             line = Utils.parseInt(sinfo.get("line"), -1) + " ";
+        }
         System.out.println("\n\nScenario:" + line + scenario.getSourceTagNames() + " - " + scenario.getName());
+        if (isScenarioOutline()) {
+            System.out.println("Examples: " + getScenarioExamples());
+        }
         try {
             singletonScenario = new SingletonScenario(scenario);
         } catch (Exception ex) {
             System.out.println("--> Error Common.beforeScenario(): " + ex.getMessage());
             singletonScenario = null;
         }
+
+        if (!MainRunner.browser.equals("none")) {
+            Cookies.deleteAllCookies();
+        }
     }
 
     @After
-    public void afterScenario() {
+    public void afterScenario(Scenario scenario) {
         try {
-            Result result = this.getLastStepResult();
-            if (!this.isScenarioPassed()) {
-                String errorMsg = result.getErrorMessage();
-                if (errorMsg != null)
-                    errorMsg = errorMsg.trim();
-                else
-                    errorMsg = "Unknown";
+            if (scenario.isFailed()) {
+                Result result = getFailedStepResult();
+                String errorMsg = "Unknown";
+                if (result != null) {
+                    String error = result.getErrorMessage();
+                    if (error != null) {
+                        errorMsg = error.trim();
+                    }
+                }
 
-                System.err.println("<--------------------->" +
-                        "\nFAILED SCENARIO: " + this.getScenarioInfo().get("name").toString().trim() +
-                        "\nFAILED STEP: " + this.getScenarioStepName(getScenarioIndex() - 1).trim() +
-                        "\nERROR: " + errorMsg +
-                        "\n<--------------------->\n\n");
-                if (errorMsg.startsWith("db.framework.utils.StepUtils$SkipException:"))
-                    this.clearStepResult(-1);
+                System.err.println("<--------------------->" + "\nFAILED SCENARIO: " + scenario.getName().trim());
+                if (isScenarioOutline()) {
+                    System.err.println("FAILED EXAMPLES: " + getScenarioExamples());
+                }
+                String stepName = getScenarioStepName(getScenarioIndex() - 1);
+
+                System.err.println("FAILED STEP: " + (stepName == null ? null : stepName.trim()) + "\nERROR: " + errorMsg + "\n<--------------------->\n\n");
+                if (errorMsg.startsWith("sdt.utils.StepUtils$ProductionException:") || errorMsg.startsWith("sdt.utils.StepUtils$SkipException:")) {
+                    clearStepResult(-1);
+                }
             }
             System.out.println("\n--> DURATION: " + Utils.toDuration(System.currentTimeMillis() - scenarioStartTime) + "\n\n\n\n");
 
         } finally {
-            if (resetBrowser != null && resetBrowser.matches("true|t")) {
-                if (MainRunner.isDebug())
-                    MainRunner.resetDriver(this.isScenarioPassed());
-                else
-                    MainRunner.resetDriver(true);
-            }
-
             if (singletonScenario != null) {
                 singletonScenario.release();
                 singletonScenario = null;
+            }
+
+            MainRunner.PageHangWatchDog.pause(false);
+            scenarioSetupComplete = false;
+
+            if (!keepBrowser) {
+                if (MainRunner.debugMode) {
+                    MainRunner.resetDriver(isScenarioPassed());
+                } else {
+                    MainRunner.resetDriver(true);
+                }
             }
         }
     }
@@ -91,12 +113,40 @@ public class Hooks extends StepUtils {
     @Before("@Step")
     public void before_step() {
         stepStartTime = System.currentTimeMillis();
-        String stepName = this.getScenarioStepName(this.getScenarioIndex());
+        isBackground = ScenarioHelper.isBackground();
+        if (isBackground) {
+            ScenarioHelper.incrementBackgroundStepCount();
+            System.out.println("--->Running background step...");
+            return;
+        }
+        // an extra result is added by every @Before hook. Need to adjust for this.
+        if (!scenarioSetupComplete) {
+            resetScenarioOffset();
+            try {
+                String stepName = getScenarioStepName(getScenarioIndex());
+                // the first step will be step 0 and will start with "0:[lineNum] - [step name]"
+                while (stepName != null && !stepName.startsWith("0")) {
+                    incrementStepIndexOffset();
+                    stepName = getScenarioStepName(getScenarioIndex());
+                }
+            } catch (NullPointerException e) {
+                // not a problem
+            }
+            scenarioSetupComplete = true;
+        }
+        String stepName = getScenarioStepName(getScenarioIndex());
         System.out.println("\n--->Step " + stepName);
     }
 
     @After("@Step")
-    public void after_step() {
+    public void after_step(Scenario scenario) {
+        if (scenario.isFailed()) {
+            Assert.fail("Scenario unexpectedly failed");
+        }
+        if (MainRunner.PageHangWatchDog.timedOut) {
+            resumePageHangWatchDog();
+            Assert.fail("PageHangWatchDog timed out, failing test");
+        }
         System.out.println("-->Step duration: " + Utils.toDuration(System.currentTimeMillis() - stepStartTime) + "\n");
     }
 
