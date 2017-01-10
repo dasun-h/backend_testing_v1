@@ -6,6 +6,7 @@
         <jdk.version>1.8</jdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <project.name>sample</project.name>
         <db_framework.version>0.0.181</db_framework.version>
     </properties>
 
@@ -132,10 +133,10 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>src</sourceDirectory>
+        <sourceDirectory>${project.basedir}/src</sourceDirectory>
         <directory>classes</directory>
-        <testSourceDirectory>src/db/framework/utils</testSourceDirectory>
 
+        <!-- The compiler plugin is used to compile the sources of your project -->
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -145,28 +146,27 @@
                     <source>${jdk.version}</source>
                     <target>${jdk.version}</target>
                     <includes>
-                        <include>db/shared/**/*.java</include>
-                        <include>db/projects/${project.name}/**/*.java</include>
+                        <include>**/*.java</include>
                     </includes>
                 </configuration>
             </plugin>
 
-            <!-- include all resources file -->
+            <!-- create db-framework-{version}.jar -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.6</version>
                 <configuration>
                     <includes>
+                        <include>db/framework/**/*</include>
                         <include>db/shared/**/*</include>
-                        <include>db/projects/${project.name}/**/*</include>
+                        <include>db/projects/**/*</include>
                     </includes>
                 </configuration>
             </plugin>
 
-            <!-- include db-framework.jar file -->
+            <!-- create db-framework-jar-with-dependencies.jar -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
@@ -188,9 +188,8 @@
                 </configuration>
             </plugin>
 
-            <!-- include all resource files -->
+            <!-- include all resource files in the jar -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>2.6</version>
                 <executions>
@@ -201,14 +200,82 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>classes/classes</outputDirectory>
+                            <outputDirectory>classes/classes/db</outputDirectory>
                             <encoding>UTF-8</encoding>
                             <resources>
                                 <resource>
-                                    <directory>src</directory>
+                                    <directory>../..</directory>
                                     <includes>
-                                        <include>db/shared/**/*</include>
-                                        <include>db/projects/${project.name}/**/*</include>
+                                        <include>shared/**/*</include>
+                                    </includes>
+                                </resource>
+                                <resource>
+                                    <directory>${project.basedir}/src/db</directory>
+                                    <includes>
+                                        <include>projects/**/*</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-runtime-resources</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>classes</outputDirectory>
+                            <encoding>UTF-8</encoding>
+                            <resources>
+                                <resource>
+                                    <directory>../..</directory>
+                                    <includes>
+                                        <include>shared/resources/data/**/*</include>
+                                        <include>shared/resources/elements/**/*</include>
+                                        <include>${project.name}/src/**/*</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-resources1</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>classes/classes/db/projects/${project.name}</outputDirectory>
+                            <encoding>UTF-8</encoding>
+                            <resources>
+                                <resource>
+                                    <directory>.</directory>
+                                    <includes>
+                                        <include>features/**/*</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-runtime-resources2</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>classes</outputDirectory>
+                            <encoding>UTF-8</encoding>
+                            <resources>
+                                <resource>
+                                    <directory>../..</directory>
+                                    <includes>
+                                        <include>shared/resources/data/**/*</include>
+                                        <include>shared/resources/elements/**/*</include>
+                                        <include>shared/resources/actions/**/*</include>
+                                        <include>${project.name}/src/**/*</include>
+                                        <include>${project.name}/features/**/*</include>
                                     </includes>
                                 </resource>
                             </resources>
@@ -217,6 +284,7 @@
                 </executions>
             </plugin>
 
+            <!-- exec:java execute Java programs in the same VM -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -234,23 +302,33 @@
                 </executions>
             </plugin>
 
+            <!-- The Surefire Plugin is used during the test phase of the build lifecycle to execute the unit tests of an application.
+            It generates reports in two different file formats -->
+            <!--1) Plain text files (*.txt) -->
+            <!--2) XML files (*.xml)-->
+            <!-- these files are generated at ${basedir}/target/surefire-reports -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.19.1</version>
                 <configuration>
+                    <testFailureIgnore>true</testFailureIgnore>
                     <suiteXmlFiles>
                         <suiteXmlFile>src/db/shared/resources/data/testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
                 </configuration>
             </plugin>
 
+            <!-- The Surefire Report Plugin parses the generated TEST-*.xml files under ${basedir}/target/surefire-reports
+            and renders them using DOXIA, which creates the web interface version of the test results. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-report-plugin</artifactId>
                 <version>2.19.1</version>
             </plugin>
 
+            <!-- Provides pretty html reports for Cucumber (Behaviour-Driven Development).
+            It works by generating html from the cucumber json report formatter.-->
             <plugin>
                 <groupId>net.masterthought</groupId>
                 <artifactId>maven-cucumber-reporting</artifactId>
@@ -277,10 +355,8 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
-
     <profiles>
     </profiles>
 </project>
