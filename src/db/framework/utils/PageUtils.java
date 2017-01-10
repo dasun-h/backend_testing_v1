@@ -327,7 +327,7 @@ public class PageUtils {
         return result;
     }
 
-    // make 'home' or 'panel.home' to 'website.mcom.page.home' or 'website.mcom.panel.home'
+    // make 'home' or 'panel.home' to 'website.page.home' or 'website.panel.home'
     public static String getPageFullPath(String pageName) {
         String pagePath = "";
         if (pageName.contains("panels."))

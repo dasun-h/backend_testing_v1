@@ -8,20 +8,22 @@
 </environment_variables>-->
 
 <!--<environment_variables name="profile-02">
-<ori_browser>chrome</ori_browser>
-<saucelabs></saucelabs>
-<os>Windows 8</os>
-<scenarios>src/db/projects/BackendTesting/features/crud_tester.feature</scenarios>
-<tags>@scenario1</tags>
-<website>http://10.101.15.48:8080/dbtest/</website>
-</environment_variables>-->
-
-<environment_variables name="profile-02">
+    <browser>firefox</browser>
+    <saucelabs></saucelabs>
     <sauce_user></sauce_user>
     <sauce_key></sauce_key>
-    <os></os>
-    <scenarios>src/db/projects/sample/features/sample_test.feature</scenarios>
+    <os>Windows 8</os>
+    <scenarios>src/db/projects/BackendTesting/features/crud_tester.feature</scenarios>
     <tags>@scenario1</tags>
-    <website>https://www.google.com/</website>
-    <browser>chrome</browser>
-</environment_variables>
+    <website>http://10.101.15.48:8080/dbtest/</website>
+</environment_variables>-->
+
+        <environment_variables name="profile-02">
+            <sauce_user></sauce_user>
+            <sauce_key></sauce_key>
+            <os></os>
+            <scenarios>src/db/projects/sample/features/sample_test.feature</scenarios>
+            <tags>@scenario1</tags>
+            <website>https://www.yahoo.com/</website>
+            <browser>chrome</browser>
+        </environment_variables>

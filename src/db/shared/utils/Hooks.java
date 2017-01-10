@@ -85,7 +85,7 @@ public class Hooks extends StepUtils {
                 String stepName = getScenarioStepName(getScenarioIndex() - 1);
 
                 System.err.println("FAILED STEP: " + (stepName == null ? null : stepName.trim()) + "\nERROR: " + errorMsg + "\n<--------------------->\n\n");
-                if (errorMsg.startsWith("sdt.utils.StepUtils$ProductionException:") || errorMsg.startsWith("sdt.utils.StepUtils$SkipException:")) {
+                if (errorMsg.startsWith("db.utils.StepUtils$SkipException:")) {
                     clearStepResult(-1);
                 }
             }
@@ -149,5 +149,4 @@ public class Hooks extends StepUtils {
         }
         System.out.println("-->Step duration: " + Utils.toDuration(System.currentTimeMillis() - stepStartTime) + "\n");
     }
-
 }

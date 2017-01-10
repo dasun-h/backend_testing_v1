@@ -10,6 +10,7 @@ import cucumber.api.testng.AbstractTestNGCucumberTests;
 import cucumber.api.testng.TestNGCucumberRunner;
 import db.framework.interactions.Navigate;
 import db.framework.utils.EnvironmentVariableRetriever;
+import db.framework.utils.ScenarioHelper;
 import db.framework.utils.StepUtils;
 import db.framework.utils.Utils;
 import net.lightbody.bmp.BrowserMobProxy;
@@ -32,8 +33,10 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static db.framework.runner.MainRunner.features;
 import static db.framework.runner.MainRunner.scenarios;
 import static db.framework.utils.EnvironmentVariableRetriever.*;
+import static db.framework.utils.ScenarioHelper.isScenarioPassed;
 import static db.framework.utils.StepUtils.*;
 import static java.lang.Runtime.getRuntime;
 
@@ -41,20 +44,22 @@ import static java.lang.Runtime.getRuntime;
  * This class handles the configuration and running of cucumber scenarios and features
  */
 @RunWith(ExtendedCucumber.class)
-@ExtendedCucumberOptions(jsonReport = "target/cucumber.json",
-        retryCount = 3,
+@ExtendedCucumberOptions(
+        jsonReport = "target/cucumber.json",
+        retryCount = 1,
         detailedReport = true,
         detailedAggregatedReport = true,
         overviewReport = true,
         toPDF = true,
-        outputFolder = "target")
+        outputFolder = "target"
+)
 @CucumberOptions(
-        features = {""},
+        features = {"src/db/projects/sample/features/"},
         plugin = {"pretty", "html:target/site/cucumber-pretty",
                 "json:target/cucumber.json", "pretty:target/cucumber-pretty.txt",
                 "usage:target/cucumber-usage.json", "junit:target/cucumber-results.xml"},
         glue = {"db.shared.steps"},
-        tags = {""}
+        tags = {"@scenario1"}
 )
 public class MainRunner extends AbstractTestNGCucumberTests {
 
@@ -109,7 +114,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
     /**
      * The Sauce Labs API key for the user
      */
-    public static String sauceKey = getEnvOrExParam("sauce_key")!= null ? getEnvOrExParam("sauce_key") : SAUCE_KEY;
+    public static String sauceKey = getEnvOrExParam("sauce_key") != null ? getEnvOrExParam("sauce_key") : SAUCE_KEY;
 
     /**
      * Path to active project files on file system
@@ -158,6 +163,9 @@ public class MainRunner extends AbstractTestNGCucumberTests {
      */
     public static ArrayList<String> URLStack = new ArrayList<>();
 
+
+    public static ArrayList<String> featureScenarios = new ArrayList<>();
+
     /**
      * The current URL
      */
@@ -174,7 +182,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
      */
     public static void main(String[] argv) throws Throwable {
         getEnvVars();
-        ArrayList<String> featureScenarios = getFeatureScenarios();
+        featureScenarios = getFeatureScenarios();
         if (featureScenarios == null) {
             throw new Exception("Error getting scenarios");
         }
@@ -232,7 +240,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
             close();
             if (argv != null) {
                 System.exit(runStatus);
-            }
+        }
         }
     }
 
@@ -261,10 +269,10 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         if (useSauceLabs == true) {
             System.out.println("SauceLab Username: " + sauceUser);
             System.out.println("SauceLab Username: " + sauceUser);
-        }else
+        } else
             System.out.println("SauceLab not specified in the environment variables file");
 
-        // close browser at exist unless debugMode is on or test is appTest
+        // close browser at exist unless debugMode is on
         closeBrowserAtExit = !debugMode;
 
         if ((url == null || url.isEmpty()) && (WEBSITE == null || WEBSITE.isEmpty())) {
@@ -332,7 +340,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
      * @return true if a valid web driver is active
      */
     public static Boolean driverInitialized() {
-        return driver == null;
+        return driver != null;
     }
 
     /**
@@ -357,8 +365,9 @@ public class MainRunner extends AbstractTestNGCucumberTests {
                 if (browser.equals("safari")) {
                     Dimension dimension = new Dimension(1280, 1024);
                     driver.manage().window().setSize(dimension);
-                } else
+                } else {
                     driver.manage().window().maximize();
+                }
                 String window_size = driver.manage().window().getSize().toString();
                 System.out.println("Init driver: browser window size = " + window_size);
                 return driver;
@@ -566,7 +575,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         }
     }
 
-    @Test(groups = "db-testng", description = "Example of using TestNGCucumberRunner to invoke Cucumber")
+    @Test(groups = "backend_testing", description = "Example of using TestNGCucumberRunner to invoke Cucumber")
     public void runCukes() {
         new TestNGCucumberRunner(getClass()).runCukes();
     }
@@ -615,13 +624,15 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         if (browser.equals("none"))
             return;
         if (useSauceLabs) {
-            if (driver instanceof RemoteWebDriver)
+            if (driver instanceof RemoteWebDriver) {
                 System.out.println("Link to your job: https://saucelabs.com/jobs/" + ((RemoteWebDriver) driver).getSessionId());
+            }
             driverQuit();
         } else if (closeBrowserAtExit) {
             System.out.println("Closing driver...");
-            if (driver != null)
+            if (driver != null) {
                 driverQuit();
+            }
         }
     }
 

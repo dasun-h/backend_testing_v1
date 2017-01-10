@@ -1081,8 +1081,8 @@ public class Utils {
     private static void initLogs() {
         if (errLog == null || infoLog == null) {
             try {
-                File errFile = new File(MainRunner.workspace + "logs/sdt-error.log");
-                File infoFile = new File(MainRunner.workspace + "logs/sdt-info.log");
+                File errFile = new File(MainRunner.workspace + "logs/db-error.log");
+                File infoFile = new File(MainRunner.workspace + "logs/db-info.log");
                 createDirectory(MainRunner.workspace + "logs");
                 if (!errFile.exists()) {
                     if (!errFile.createNewFile()) {

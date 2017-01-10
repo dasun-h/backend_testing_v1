@@ -1,6 +1,7 @@
 Feature: Sample
 
   @scenario1
-  Scenario: Google Page Load
-    Given I visit the google home page
-    And I verify google home page
+  Scenario: Yahoo Search
+    Given I visit the yahoo home page
+    And I verify yahoo home page
+    And I search "WWE" keyword using yahoo

@@ -10,7 +10,7 @@ import static db.framework.utils.PageUtils.getPageFullPath;
 public class PageElement {
     public String elementKey = null;      // home.logo => home.logo or panel.home.logo
     public String pageName = null;        // home.logo => home
-    public String pagePath = null;        // home.logo => website.mcom.page.home
+    public String pagePath = null;        // home.logo => website.page.home
     public String elementName = null;     // home.logo => logo
     public ArrayList<String> elementLocators = new ArrayList<>(); // home.logo => id
     public ArrayList<String> elementValues = new ArrayList<>();   // home.logo => logoImage
@@ -48,7 +48,7 @@ public class PageElement {
     /**
      * This return path of the page
      *
-     * @return page path home.logo = website.mcom.page.home
+     * @return page path home.logo = website.page.home
      */
     public String getPagePath() {
         return pagePath;

@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
-import static com.macys.sdt.framework.utils.Utils.errLog;
+import static db.framework.utils.Utils.errLog;
 
 /**
  * A collection of ways to wait for expected conditions

@@ -184,7 +184,6 @@ public class DropDowns {
 
     /**
      * Method to select text from a drop down list
-     * Note: Using this for BCOM as in Account pages the select elements are hidden in UI
      *
      * @param ele    drop down list element
      * @param listId list of elements
@@ -200,7 +199,6 @@ public class DropDowns {
 
     /**
      * Method to select value from a drop down list based on index
-     * Note: Using this for BCOM as in Account pages the select elements are hidden in UI
      *
      * @param ele    drop down list element
      * @param listId list of elements

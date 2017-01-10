@@ -187,12 +187,8 @@ public class Navigate {
      * <p>
      * Navigates to a url. If pageURL is not a valid url, it assumes it's a page json file name.
      * It uses the "url" element from the json file as relative path from "website" environment variable.
-     * So if page_name.url = "/shop" and website = "www.macys.com" you will go to "www.macys.com/shop".
      * <br>
      * You can also create an element in your page called "format_url" which is treated as a format string
-     * with the arguments you pass. Example: <br>
-     * <code>visit("product_display", productId);</code> <br>
-     * <code>"format_url":     "/shop/product/?ID=%1d"</code>
      * </p>
      *
      * @param pageURL         either valid url or JSON page file name
@@ -208,11 +204,6 @@ public class Navigate {
 
         try {
             String givenURL = MainRunner.url;
-            // check if pageURL has product, then directly navigate to the given url
-            if (pageURL.contains("product") && pageURL.contains("ID=") && !pageURL.startsWith("http://")) {
-                pageURL = "http://" + pageURL;
-            }
-
             if (!pageURL.startsWith("http")) {
                 if (!(pageURL.matches(".*\\.url$"))) {
                     if (format) {

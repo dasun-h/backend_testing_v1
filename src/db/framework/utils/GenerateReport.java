@@ -11,7 +11,7 @@ public class GenerateReport {
 
     public GenerateReport() {}
 
-    public static void GenerateMasterthoughtReport(){
+    public static synchronized void GenerateMasterthoughtReport(){
         try{
             File reportOutputDirectory = new File("target");
             List<String> jsonFiles = new ArrayList<>();

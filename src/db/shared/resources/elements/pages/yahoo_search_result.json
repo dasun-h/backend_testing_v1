@@ -1,0 +1,8 @@
+{
+  "url": "https://search.yahoo.com/",
+  "verify_page": "cssSelector, #horizontal-bar>ol.reg.searchLeftTop",
+  "searched_left_content": "cssSelector, #left",
+  "searched_right_content": "cssSelector, #right",
+  "pagination": "cssSelector, .compPagination",
+  "searched_text_box": "cssSelector, #yschsp"
+}
