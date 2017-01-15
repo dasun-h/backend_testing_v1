@@ -21,6 +21,8 @@ import org.junit.runner.RunWith;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
@@ -228,8 +230,6 @@ public class MainRunner extends AbstractTestNGCucumberTests {
 
         PageHangWatchDog.init();
 
-        new AuthenticationDialog();
-
         try {
             runStatus = cucumber.api.cli.Main.run(featureScenarios.toArray(new String[featureScenarios.size()]),
                     Thread.currentThread().getContextClassLoader());
@@ -240,7 +240,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
             close();
             if (argv != null) {
                 System.exit(runStatus);
-        }
+            }
         }
     }
 
@@ -563,15 +563,26 @@ public class MainRunner extends AbstractTestNGCucumberTests {
     }
 
     /**
-     * Closes a firefox alert if present
+     * Closes an alert if present
      */
+
+    public static boolean isAlertPresent(){
+        boolean foundAlert;
+        WebDriverWait wait = new WebDriverWait(driver, 10);
+        try {
+            wait.until(ExpectedConditions.alertIsPresent());
+            foundAlert = true;
+            driver.switchTo().defaultContent();
+        } catch (TimeoutException eTO) {
+            foundAlert = false;
+        }
+        return foundAlert;
+    }
+
     public static void closeAlert() {
         if (driver != null) {
-            try {
-                driver.switchTo().alert().accept();
-            } catch (org.openqa.selenium.NoAlertPresentException e) {
-                System.out.println("No alert to close");
-            }
+            driver.switchTo().alert().accept();
+            Assert.assertFalse("Alert is still present", isAlertPresent());
         }
     }
 
@@ -740,167 +751,6 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         return 1;
     }
 
-    // protected methods
-    // windows authentication dialog login
-    protected static class AuthenticationDialog extends Thread {
-        private static ServerSocket m_socketMutex;
-
-        public AuthenticationDialog() {
-            String os_name = System.getProperty("os.name").toLowerCase();
-            if (getExParam("require_authentication") == null) {
-                System.out.println("AuthenticationDialog not required: "
-                        + getExParam("require_authentication"));
-                return;
-            }
-            if (!(Utils.isWindows() && browser.equals("firefox")) &&
-                    !(Utils.isWindows() && browser.equals("chrome")) &&
-                    !(Utils.isOSX() && browser.equals("safari"))) {
-                System.out.println("AuthenticationDialog not required:"
-                        + getExParam("require_authentication")
-                        + ":" + os_name
-                        + ":" + browser);
-                return;
-            }
-
-            this.start();
-            new Thread(() -> {
-                switch (browser) {
-                    case "firefox":
-                        runFirefoxBackgroundMethod();
-                        break;
-                    case "safari":
-                        runSafariBackgroundMethod();
-                        break;
-                    case "chrome":
-                        runChromeBackgroundMethod();
-                        break;
-                }
-            }).start();
-        }
-
-        protected static void runFirefoxBackgroundMethod() {
-            Utils.threadSleep(4000, null);
-            if (m_socketMutex == null) {
-                System.out.println("-->Another Authentication monitoring background thread already exist.");
-                return;
-            }
-            System.out.println("-->Firefox Windows Authentication monitoring background thread started");
-
-            Process p;
-            String file_path = "src/db/framework/authentication_popup/windows_authentication_firefox.exe";
-            if (!new File("src").exists())
-                file_path = "db/framework/authentication_popup/windows_authentication_firefox.exe";
-
-            while (true) {
-                try {
-                    p = getRuntime().exec(file_path);
-                    Utils.ProcessWatchDog pd = new Utils.ProcessWatchDog(p, 5000l, "runFirefoxBackgroundMethod()");
-                    p.waitFor();  // wait for process to complete
-                    pd.interrupt();
-                } catch (Exception e) {
-                    // ignore all errors
-                }
-                // wait 2 seconds
-                Utils.threadSleep(2000, null);
-            }
-        }
-
-        protected static void runSafariBackgroundMethod() {
-            Utils.threadSleep(4000, null);
-            if (m_socketMutex == null) {
-                System.err.println("-->Another Authentication monitoring background thread already exist.");
-                return;
-            }
-            System.err.println("-->Authentication monitoring background thread started");
-
-            String p_name;
-            p_name = "mac_authentication_safari.app";
-            Process p;
-            String file_path = "/Applications/" + p_name;
-            File f = new File(file_path);
-            if (!f.exists())
-                file_path = "src/db/framework/authentication_popup/" + p_name;
-            if (!new File("src").exists())
-                file_path = "db/framework/authentication_popup/" + p_name;
-
-            file_path = "open -n " + file_path;
-
-            while (true) {
-                try {
-                    p = getRuntime().exec(file_path);
-                    Utils.ProcessWatchDog pd = new Utils.ProcessWatchDog(p, 20000l, "runSafariBackgroundMethod()");
-                    p.waitFor();  // wait for process to complete
-                    pd.interrupt();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    // ignore all errors
-                }
-                // wait 10 seconds
-                Utils.threadSleep(10000, null);
-            }
-        }
-
-        protected static void runChromeBackgroundMethod() {
-            Utils.threadSleep(4000, null);
-            if (m_socketMutex == null) {
-                System.out.println("-->Another Authentication monitoring background thread already exist.");
-                return;
-            }
-            System.out.println("-->Chrome Windows Authentication monitoring background thread started");
-
-            Process p;
-            String file_path = "src/db/framework/authentication_popup/windows_authentication_chrome.exe";
-            if (!new File("src").exists())
-                file_path = "db/framework/authentication_popup/windows_authentication_chrome.exe";
-
-            // chrome need workaround for the Chrome Authentication Required popup
-            // check the current URL periodically and compare it with original URL
-            String curl = null;
-            String org_url = url;
-            org_url = org_url.replace("https://", "");
-            org_url = org_url.replace("http://", "");
-            org_url = org_url.replace("www.", "");
-            int width = -1;
-
-            while (true) {
-                Utils.threadSleep(4000, null);
-                curl = getWebDriver().getCurrentUrl();
-                // current url is still the same domain, then skip
-                if (curl.contains(org_url))
-                    continue;
-
-                // current url is not empty (Chrome default), then skip
-                if (!(curl.contains("data:") || curl.contains("xnchegrn")))
-                    continue;
-
-                // there seems to be Chrome Authentication Required Popup
-                try {
-                    if (width == -1) {
-                        width = driver.manage().window().getSize().width;
-                        file_path = file_path + " " + width;
-                    }
-                    p = getRuntime().exec(file_path);
-                    Utils.ProcessWatchDog pd = new Utils.ProcessWatchDog(p, 10000, "runChromeBackgroundMethod()");
-                    p.waitFor();  // wait for process to complete
-                    pd.interrupt();
-                } catch (Exception e) {
-                    // ignore all errors
-                }
-                // wait 10 seconds
-                Utils.threadSleep(6000, null);
-            }
-        }
-
-        public void run() {
-            try {
-                m_socketMutex = new ServerSocket(6999);
-                m_socketMutex.accept();
-            } catch (IOException e) {
-                m_socketMutex = null;
-            }
-        }
-    }
-
     public static class PageHangWatchDog extends Thread {
         private final static long TIMEOUT = (StepUtils.safari() || StepUtils.ie() ? 130 : 95) * 1000;
         private final static int MAX_FAILURES = 5;
@@ -950,7 +800,6 @@ public class MainRunner extends AbstractTestNGCucumberTests {
                         continue;
                     }
                     String url = currentURL;
-                    //System.err.println("Watchdog tick:\n>old url: " + this.m_url + "\n>new url: " + url);
                     if (url.contains("about:blank")) {
                         continue;
                     }
@@ -965,7 +814,9 @@ public class MainRunner extends AbstractTestNGCucumberTests {
                                 } catch (Exception e) {
                                     // sometimes IE fails to run js. Continue running.
                                 } finally {
-                                    Navigate.browserRefresh();
+                                    if (browser.equalsIgnoreCase("ie")) {
+                                        Navigate.browserRefresh();
+                                    }
                                 }
                             }).start();
 
@@ -982,7 +833,6 @@ public class MainRunner extends AbstractTestNGCucumberTests {
                     System.err.println("--> Error:PageHangWatchDog:" + ex.getMessage());
                     ex.printStackTrace();
                 } finally {
-                    //System.err.print(pause ? "|" : "~");
                     Utils.threadSleep(5000, this.getClass().getSimpleName());
                 }
             }

@@ -8,11 +8,6 @@ import gherkin.formatter.JSONPrettyFormatter;
 import gherkin.parser.Parser;
 import gherkin.util.FixJava;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.apache.commons.compress.archivers.jar.JarArchiveInputStream;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
@@ -20,18 +15,12 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.io.FileUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.CookieStore;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.ClientContext;
 import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
@@ -43,10 +32,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -59,13 +45,11 @@ public class Utils {
 
     public static PrintStream errLog = null;
     public static PrintStream infoLog = null;
-    public static Logger log = LoggerFactory.getLogger(db.framework.utils.Utils.class);
+    public static Logger log = LoggerFactory.getLogger(Utils.class);
     // use these to redirect unneeded error output
     private static PrintStream originalErr = System.err;
-    private static PrintStream originalInfo = System.out;
     private static int errRedirectCalls = 0;
     private static int infoRedirectCalls = 0;
-    private static boolean resourcesExtracted = false;
 
     /**
      * Executes a command on the command line (cmd for windows, else bash)
@@ -164,20 +148,34 @@ public class Utils {
     /**
      * Creates a directory
      *
+     * @param dir   directory name
+     * @param clean true for a clean directory
+     * @return resulting File
+     */
+    public static File createDirectory(String dir, boolean clean) {
+        return createDirectory(new File(dir), clean);
+    }
+
+    /**
+     * Creates a directory
+     *
      * @param fDir  File to create
      * @param clean whether to delete any existing directory
      * @return directory that was created
      */
     public static File createDirectory(File fDir, boolean clean) {
         if (!fDir.exists()) {
-            fDir.mkdirs();
+            if (!fDir.mkdirs()) {
+                System.err.println("Unable to make directory: " + fDir.getName());
+            }
         }
-        if (clean)
+        if (clean) {
             try {
                 FileUtils.cleanDirectory(fDir);
             } catch (IOException e) {
                 System.out.println("Error cleaning directory:" + e.getMessage());
             }
+        }
         return fDir;
     }
 
@@ -189,27 +187,6 @@ public class Utils {
      */
     public static File createDirectory(String dir) {
         return createDirectory(dir, false);
-    }
-
-    /**
-     * Creates a directory
-     *
-     * @param dir   directory name
-     * @param clean true for a clean directory
-     * @return resulting File
-     */
-    public static File createDirectory(String dir, boolean clean) {
-        File fdir = new File(dir);
-        if (!fdir.exists()) {
-            fdir.mkdirs();
-        }
-        try {
-            if (clean)
-                FileUtils.cleanDirectory(fdir);
-        } catch (IOException e) {
-            System.out.println("Error cleaning directory:" + e.getMessage() + ":" + dir);
-        }
-        return fdir;
     }
 
     /**
@@ -245,7 +222,20 @@ public class Utils {
      * @return true if write succeeded
      */
     public static boolean writeSmallBinaryFile(byte[] aBytes, File aFileName) {
-        return writeBinaryFile(aBytes, aFileName, false);
+        DataOutputStream os = null;
+        FileOutputStream fout = null;
+        try {
+            fout = new FileOutputStream(aFileName);
+            os = new DataOutputStream(fout);
+            os.write(aBytes);
+            return true;
+        } catch (IOException ex) {
+            System.out.println("Cannot create:" + aFileName.getPath());
+        } finally {
+            closeIoOutput(os);
+            closeIoOutput(fout);
+        }
+        return false;
     }
 
     /**
@@ -268,12 +258,15 @@ public class Utils {
         long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
 
         StringBuilder sb = new StringBuilder(64);
-        if (days > 0)
+        if (days > 0) {
             sb.append(days).append(" Days ");
-        if (hours > 0)
+        }
+        if (hours > 0) {
             sb.append(hours).append(" Hours ");
-        if (minutes > 0)
+        }
+        if (minutes > 0) {
             sb.append(minutes).append(" Minutes ");
+        }
         sb.append(seconds).append(" Seconds");
 
         return (sb.toString());
@@ -290,17 +283,24 @@ public class Utils {
     public static boolean writeBinaryFile(byte[] aBytes, File aFileName, boolean append) {
         try {
             if (!append && aFileName.exists()) {
-                aFileName.delete();
+                if (!aFileName.delete()) {
+                    System.err.println("Unable to delete file: " + aFileName.getName());
+                }
             }
-            File fdir = aFileName.getAbsoluteFile().getParentFile();
-            if (!fdir.exists())
-                fdir.mkdirs();
+            File fDir = aFileName.getAbsoluteFile().getParentFile();
+            if (!fDir.exists()) {
+                if (!fDir.mkdirs()) {
+                    System.err.println("Unable to create directory: " + fDir.getName());
+                    return false;
+                }
+            }
 
             Path path = Paths.get(aFileName.getCanonicalPath());
-            if (append && aFileName.exists())
+            if (append && aFileName.exists()) {
                 Files.write(path, aBytes, StandardOpenOption.APPEND);
-            else
+            } else {
                 Files.write(path, aBytes); // creates, overwrites
+            }
             return true;
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -317,12 +317,15 @@ public class Utils {
      */
     public static int parseInt(Object number, int ret) {
         try {
-            if (number == null)
+            if (number == null) {
                 return ret;
-            if (number instanceof Float)
+            }
+            if (number instanceof Float) {
                 return ((Float) number).intValue();
-            if (number instanceof Double)
+            }
+            if (number instanceof Double) {
                 return ((Double) number).intValue();
+            }
             return Integer.parseInt(number.toString().replaceAll(",", "").split("\\.")[0]);
         } catch (Exception ex) {
             return ret;
@@ -344,7 +347,6 @@ public class Utils {
             gherkin = FixJava.readReader(new InputStreamReader(new FileInputStream(path.trim()), "UTF-8"));
         } catch (FileNotFoundException e) {
             Assert.fail("Feature file not found at " + path);
-            // e.printStackTrace();
         } catch (UnsupportedEncodingException | RuntimeException e) {
             e.printStackTrace();
         }
@@ -362,29 +364,29 @@ public class Utils {
         parser.parse(gherkin, path, 0);
         formatter.done();
         formatter.close();
-        //		System.out.println("json output: n" + json + "'");
         return json.toString();
     }
 
     /**
      * Sleeps for a given time
      *
-     * @param sleeptime time to sleep in millis
+     * @param sleepTime time to sleep in millis
      * @param msg       info message to display
      * @return true if sleep interrupted
      */
-    public static boolean threadSleep(long sleeptime, String msg) {
+    public static boolean threadSleep(long sleepTime, String msg) {
         Thread cur = Thread.currentThread();
+        initLogs();
         try {
-            //if (msg != null)
-            //    System.out.println("--> Thread sleep: " + msg + ":id-" + cur.getId() + ":" + sleeptime);
-            Thread.sleep(sleeptime);
-            //if (msg != null)
-            //    System.out.println(new Date() + "--> Thread awake: " + msg + ":id-" + cur.getId() + ":normal");
+            if (msg != null)
+                infoLog.println("--> Thread sleep: " + msg + ":id-" + cur.getId() + ":" + sleepTime);
+            Thread.sleep(sleepTime);
+            if (msg != null)
+                infoLog.println(new Date() + "--> Thread awake: " + msg + ":id-" + cur.getId() + ":normal");
             return false;
         } catch (InterruptedException e) {
-            //if (msg != null)
-            //    System.out.println(new Date() + "--> Thread awake: " + msg + ":id-" + cur.getId() + ":" + e.getMessage());
+            if (msg != null)
+                errLog.println(new Date() + "--> Thread awake: " + msg + ":id-" + cur.getId() + ":" + e.getMessage());
             return true;
         }
     }
@@ -416,6 +418,16 @@ public class Utils {
         return System.getProperty("os.name").toLowerCase().contains("windows 8");
     }
 
+    /**
+     * Checks if the machine is running linux
+     *
+     * @return true if running on a linux machine
+     */
+    public static boolean isLinux() {
+        String OS = System.getProperty("os.name").toLowerCase();
+        return (OS.contains("nix") || OS.contains("nux") || OS.contains("aix"));
+    }
+
 
     /**
      * Gets the method that called another
@@ -442,15 +454,18 @@ public class Utils {
             String trace = stackel.toString();
             if (trace.contains(".getStackTrace(") ||
                     trace.contains(".getCallFromFunction(") ||
-                    trace.contains(from))
+                    trace.contains(from)) {
                 continue;
+            }
+            if (trace.startsWith("db.")) {
+                displayEls.add(trace);
+            }
             if (displayEls.size() == size) {
                 break;
             }
-            if (trace.startsWith("db."))
-                displayEls.add(trace);
-            if (--count <= 0)
+            if (--count <= 0) {
                 break;
+            }
         }
         return displayEls;
     }
@@ -493,44 +508,6 @@ public class Utils {
         System.out.println("-->desktopCapture():" + (System.currentTimeMillis() - ts));
     }
 
-    /**
-     * Gets a resource file with a given name
-     *
-     * @param fname file name
-     * @return resulting File
-     */
-    public static File getResourceFile(String fname) {
-        String resPath = "src/db/";
-        if (!new File("src").exists())
-            resPath = "db/";
-
-        // project data
-        String full_path = getResourcePath(fname);
-        String path = resPath + MainRunner.projectDir.replace(".", "/") + "/resources/data/" + full_path;
-        File resource = new File(path);
-        if (resource.exists() && !resource.isDirectory()) {
-            return resource;
-        }
-
-        // shared data
-        path = resPath + "shared/resources/data/" + full_path;
-        resource = new File(path);
-        if (resource.exists() && !resource.isDirectory()) {
-            return resource;
-        }
-        return resource;
-    }
-
-    /**
-     * Gets the path to a resource file
-     *
-     * @param fName file to look for
-     * @return file path
-     */
-    private static String getResourcePath(String fName) {
-        return "other/" + fName;
-    }
-
     public static String listToString(List<String> list, String token, String[] cleans) {
         if (cleans != null) {
             for (int i = list.size() - 1; i >= 0; i--) {
@@ -559,162 +536,23 @@ public class Utils {
 
     }
 
-    protected static byte[] readSmallBinaryFile(File aFileName) {
-        if (aFileName == null || !aFileName.exists())
+    protected static byte[] readSmallBinaryFile(File file) {
+        if (file == null || !file.exists()) {
             return null;
+        }
         try {
-            Path path = Paths.get(aFileName.getCanonicalPath());
+            Path path = Paths.get(file.getCanonicalPath());
             return Files.readAllBytes(path);
         } catch (IOException e) {
-
-        }
-        return null;
-    }
-
-    private static boolean closeIoInput(InputStream st) {
-        if (st == null)
-            return true;
-        try {
-            st.close();
-            return true;
-        } catch (Exception ex) {
-            return false;
-        }
-    }
-
-    private static ArrayList getTarFileList(File tar, String filepath) throws IOException {
-        ArrayList list = new ArrayList();
-        FileInputStream fin = null;
-        TarArchiveInputStream intar = null;
-        try {
-            fin = new FileInputStream(tar);
-            intar = new TarArchiveInputStream(fin);
-            getCompressFileList(list, intar, filepath);
-        } finally {
-            if (intar != null)
-                intar.close();
-            if (fin != null)
-                fin.close();
-        }
-        return list;
-    }
-
-    private static void getCompressFileList(ArrayList list, ArchiveInputStream intar, String filepath) throws IOException {
-        ArchiveEntry entry = null;
-        while ((entry = intar.getNextEntry()) != null) {
-            if (!entry.getName().contains(filepath))
-                continue;
-            HashMap hsf = new HashMap();
-            hsf.put("name", entry.getName());
-            hsf.put("length", entry.getSize());
-            if (entry.isDirectory())
-                hsf.put("directory", entry.isDirectory());
-            list.add(hsf);
-        }
-    }
-
-    private static byte[] getTarFile(File tar, String filepath) throws IOException {
-        FileInputStream fin = null;
-        TarArchiveInputStream intar = null;
-        try {
-            fin = new FileInputStream(tar);
-            intar = new TarArchiveInputStream(fin);
-            TarArchiveEntry entry = null;
-            while ((entry = intar.getNextTarEntry()) != null) {
-                if (entry.isDirectory() || !entry.getName().startsWith(filepath))
-                    continue;
-                byte[] ret = new byte[(int) entry.getSize()];
-                intar.read(ret, 0, ret.length);
-                return ret;
-            }
-        } finally {
-            if (intar != null)
-                intar.close();
-            if (fin != null)
-                fin.close();
-        }
-        return null;
-    }
-
-    private static boolean outputTarFile(File tar, String arfilepath, String outputpath) throws IOException {
-        FileInputStream fin = null;
-        TarArchiveInputStream intar = null;
-        try {
-            fin = new FileInputStream(tar);
-            intar = new TarArchiveInputStream(fin);
-            outputCompressFile(arfilepath, intar, outputpath);
-        } finally {
-            closeIoInput(intar);
-            closeIoInput(fin);
-        }
-        return false;
-    }
-
-    protected static boolean outputJarFile(File ar, String arfilepath, String outputpath, String... fileFilters) throws IOException {
-        FileInputStream fin = null;
-        JarArchiveInputStream inar = null;
-        try {
-            fin = new FileInputStream(ar);
-            inar = new JarArchiveInputStream(fin);
-            outputCompressFile(arfilepath, inar, outputpath, fileFilters);
-        } finally {
-            closeIoInput(inar);
-            closeIoInput(fin);
-        }
-        return false;
-    }
-
-    private static String getOutputPath(String tarpath, String outputpath, String path) {
-        if (outputpath.isEmpty())
-            return path;
-        return outputpath + "/" + path.replaceAll(tarpath, "");
-    }
-
-    private static boolean isFileFilter(String[] filters, String path) {
-        if (filters.length == 0)
-            return true;
-        for (String filter : filters) {
-            if (path.contains(filter))
-                return true;
-        }
-        return false;
-    }
-
-    private static void outputCompressFile(String tarfilepath, ArchiveInputStream intar, String outputpath, String... fileFilters) throws IOException {
-        File foutput = new File(outputpath);
-        createDirectory(foutput.getAbsoluteFile().getParentFile(), false);
-
-        ArchiveEntry entry;
-        while ((entry = intar.getNextEntry()) != null) {
-            String path = entry.getName();
-            if (!path.startsWith(tarfilepath))
-                continue;
-            if (!entry.isDirectory() && !isFileFilter(fileFilters, path))
-                continue;
-
-            if (entry.isDirectory()) {
-                createDirectory(new File(getOutputPath(tarfilepath, outputpath, path)), false);
-            } else {
-                File fout = new File(getOutputPath(tarfilepath, outputpath, path));
-                long ts = System.currentTimeMillis();
-                System.out.print("writing " + fout.getCanonicalPath() + "...");
-                fout.delete();
-
-                ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                byte[] buff = new byte[1024];
-                int length = -1;
-                while ((length = intar.read(buff)) > -1) {
-                    bout.write(buff, 0, length);
-                }
-                System.out.println(System.currentTimeMillis() - ts);
-                writeBinaryFile(bout.toByteArray(), fout, true);
-            }
+            System.err.println("Could not read file: " + file.getName());
+            return null;
         }
     }
 
     private static boolean closeIoOutput(OutputStream st) {
-        if (st == null)
+        if (st == null) {
             return true;
+        }
         try {
             st.close();
             return true;
@@ -724,19 +562,9 @@ public class Utils {
     }
 
     private static Object toObject(byte[] bytes) {
-        try {
-            ByteArrayInputStream bi = null;
-            ObjectInputStream oo = null;
-            try {
-                bi = new ByteArrayInputStream(bytes);
-                oo = new ObjectInputStream(bi);
-            } finally {
-                if (oo != null)
-                    oo.close();
-                if (bi != null)
-                    bi.close();
-            }
-
+        try (
+                ObjectInputStream oo = new ObjectInputStream(new ByteArrayInputStream(bytes))
+        ) {
             return oo.readObject();
         } catch (Exception ex) {
             return null;
@@ -744,18 +572,14 @@ public class Utils {
     }
 
     private static byte[] toBytes(Object object) {
-        ByteArrayOutputStream baos = null;
-        ObjectOutputStream oos = null;
-        try {
-            baos = new ByteArrayOutputStream();
-            oos = new ObjectOutputStream(baos);
-            oos.writeObject(object);
-            return baos.toByteArray();
+        try (
+                ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+                ObjectOutputStream objectOutStream = new ObjectOutputStream(byteOutStream)
+        ) {
+            objectOutStream.writeObject(object);
+            return byteOutStream.toByteArray();
         } catch (Exception ex) {
             return null;
-        } finally {
-            closeIoOutput(oos);
-            closeIoOutput(baos);
         }
     }
 
@@ -780,13 +604,14 @@ public class Utils {
         String line = "";
         while (line != null) {
             line = is.readLine();
-            if (line != null)
+            if (line != null) {
                 sb.append(line).append("\n");
+            }
         }
         return sb;
     }
 
-    protected static String httpGet(String url, StringBuilder cookies) throws Exception {
+    public static String httpGet(String url, StringBuilder cookies) throws Exception {
         HttpClient client = new HttpClient();
         CookieStore cookieStore = new BasicCookieStore();
         HttpContext httpContext = new BasicHttpContext();
@@ -820,187 +645,22 @@ public class Utils {
         }
     }
 
-    private static void appendCookies(StringBuilder cookies, CloseableHttpResponse response) {
-        Object resCookie = response.getHeaders("Set-Cookie");
-        if (resCookie != null) {
+    public static ArrayList<JSONObject> jsonArrayToList(JSONArray json) {
+        ArrayList<JSONObject> items = new ArrayList<>(json.length());
+        for (int i = 0; i < json.length(); i++) {
             try {
-                if (resCookie.getClass().toString().contains("[Lorg.apache.http.Header")) {
-                    org.apache.http.Header[] headers = (org.apache.http.Header[]) resCookie;
-                    if (headers.length > 0) {
-                        String cookieValue = headers[0].toString().replaceAll("Set-Cookie: ", "");
-                        cookies.append(cookieValue).append(";");
-                    }
-                }
-            } catch (Exception e1) {
-                e1.printStackTrace();
+                items.add((JSONObject) json.get(i));
+            } catch (JSONException e) {
+                System.err.println("Unable to convert JSONArray to List<JSONObject>: " + e);
             }
         }
-    }
-
-    protected static int post(CloseableHttpClient client, String url, Map hparams, StringBuilder cookies, StringBuilder result) throws Exception {
-        HttpPost post = new HttpPost(encodeURL(url));
-        post.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.131 Safari/537.36");
-        post.setHeader("Accept-Language", "en-US,en;q=0.5");
-        post.setHeader("Connection", "keep-alive");
-        if (!cookies.toString().isEmpty())
-            post.setHeader("Cookie", cookies.toString());
-
-        Iterator en = hparams.keySet().iterator();
-        List<NameValuePair> urlParameters = new ArrayList<>();
-        while (en.hasNext()) {
-            String key = en.next().toString();
-            urlParameters.add(new BasicNameValuePair(key, hparams.get(key).toString()));
-        }
-
-        post.setEntity(new UrlEncodedFormEntity(urlParameters));
-
-        if (!url.endsWith("/j_acegi_security_check"))
-            System.out.println("post():" + url + "\n-->Params: " + ((url.endsWith("/json") ? "json_data..." : urlParameters)));
-        else
-            System.out.println("post():" + url);
-        HttpResponse response = client.execute(post);
-
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (200 > statusCode || statusCode >= 400) {
-            System.out.println("-->post().reponse: " + response);
-            throw new Exception("Message code failed: " + response.getStatusLine());
-        }
-
-        appendCookies(cookies, (CloseableHttpResponse) response);
-
-        result.append(readStringFromInputStream(new BufferedReader(new InputStreamReader(response.getEntity().getContent()))).toString());
-        return statusCode;
-    }
-
-    public static String decryptPassword(String password) {
-        String pWord = null;
-        try {
-            File passwordTxt = getResourceFile("password.json");
-            String javaText = Utils.readTextFile(passwordTxt);
-            JSONObject json = new JSONObject(javaText);
-            pWord = json.get(password).toString();
-        } catch (Exception e) {
-            Assert.fail("Unable to find data in file" + e);
-        }
-        return pWord;
-    }
-
-    /**
-     * Method to return all contextual media information
-     *
-     * @return Contextual Media information
-     */
-    public static JSONObject getContextualizeMedia() {
-
-        File queries = getResourceFile("contextualize_media.json");
-        JSONObject jsonObject = null;
-
-        try {
-            String jsonTxt = Utils.readTextFile(queries);
-            jsonObject = new JSONObject(jsonTxt);
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-        }
-
-        return jsonObject;
-
-    }
-
-    public static class PageHangWatchDog extends Thread {
-        private final static long TIMEOUT = 60 * 1000L;
-        private static PageHangWatchDog m_PageHangWatchDog;
-        private static boolean m_pause;
-        private String m_url;
-        private long m_ts;
-
-        private PageHangWatchDog() {
-            System.err.println("--> Start:PageHangWatchDog:" + new Date());
-            this.reset(MainRunner.getWebDriver().getCurrentUrl());
-            this.start();
-        }
-
-        public static void init() {
-            if (m_PageHangWatchDog == null) {
-                m_PageHangWatchDog = new PageHangWatchDog();
-            }
-        }
-
-        public static void pause(boolean ispause) {
-            m_pause = ispause;
-        }
-
-        private void reset(String url) {
-            this.m_ts = System.currentTimeMillis();
-            if (url != null)
-                this.m_url = url;
-        }
-
-        public void run() {
-            Thread.currentThread().setPriority(MAX_PRIORITY);
-            while (true) {
-                //System.err.print("^");
-                try {
-                    if (m_pause)
-                        continue;
-                    //System.err.print("^");
-                    if (!MainRunner.driverInitialized())
-                        continue;
-                    String url = MainRunner.currentURL;
-                    if (url.contains("about:blank"))
-                        continue;
-                    if (url.equals(this.m_url)) {
-                        if (System.currentTimeMillis() - this.m_ts > TIMEOUT) {
-                            System.err.println("--> PageHangWatchDog: timeout at " + this.m_url);
-                            new Thread(StepUtils::stopPageLoad).start();
-                            this.reset(null);
-                        }
-                    } else {
-                        this.reset(url);
-                    }
-                } catch (Throwable ex) {
-                    System.err.println("--> Error:PageHangWatchDog:" + ex.getMessage());
-                    ex.printStackTrace();
-                } finally {
-                    //System.err.print(m_pause ? "|" : "~");
-                    Utils.threadSleep(5000, this.getClass().getSimpleName());
-                }
-            }
-        }
-    }
-
-    public static class ThreadWatchDog extends Thread {
-        private Thread m_thread;
-        private long m_timeout;
-        private String m_name;
-        private Runnable m_callback;
-
-        public ThreadWatchDog(Thread th, long timeout, String name, Runnable callback) {
-            this.m_thread = th;
-            this.m_timeout = timeout;
-            this.m_name = name + System.currentTimeMillis();
-            this.m_callback = callback;
-            this.start();
-        }
-
-        public void run() {
-            if (Utils.threadSleep(this.m_timeout, "--> ThreadWatchDog.start():" + this.m_name + ":" + this.m_timeout)) {
-                System.err.println("--> ThreadWatchDog.start():" + this.m_name + ":" + this.m_timeout + ": exit normally.");
-                return;
-            }
-            if (this.m_thread != null && this.m_thread.isAlive()) {
-                System.err.println("--> ThreadWatchDog.destroy():" + this.m_name + ":" + this.m_timeout);
-                this.m_thread.interrupt();
-            }
-            if (this.m_callback != null)
-                m_callback.run();
-        }
+        return items;
     }
 
     protected static class ReadStream extends Thread {
         StringBuilder console = new StringBuilder();
         String name;
         InputStream is;
-        Thread thread;
 
         public ReadStream(String name, InputStream is) {
             this.name = name;
@@ -1016,8 +676,9 @@ public class Utils {
                     String s = br.readLine();
                     if (s == null)
                         break;
-                    if (System.getenv("DEBUG") != null)
+                    if (System.getenv("DEBUG") != null) {
                         System.out.println(s);
+                    }
                     console.append(s).append("\n");
                 }
                 is.close();
@@ -1030,18 +691,6 @@ public class Utils {
         public StringBuilder getConsole() {
             return this.console;
         }
-    }
-
-    protected abstract static class UtilsComparator implements Comparator {
-        private Object[] m_params;
-
-        public UtilsComparator(Object[] params) {
-            this.m_params = params;
-        }
-
-        @Override
-        public abstract int compare(Object o1, Object o2);
-
     }
 
     public static class ProcessWatchDog extends Thread {
@@ -1118,23 +767,6 @@ public class Utils {
         if (infoLog != null) {
             System.setOut(infoLog);
             infoRedirectCalls++;
-        }
-    }
-
-    /**
-     * Sets System.Out back to the console
-     * <p>
-     * Maintains a call count with redirectSOut so redirects/resets below
-     * each other don't mess each other up.
-     * </p>
-     */
-    public static void resetSOut() {
-        infoRedirectCalls--;
-        if (infoRedirectCalls < 0) {
-            infoRedirectCalls = 0;
-        }
-        if (infoRedirectCalls == 0) {
-            System.setOut(originalInfo);
         }
     }
 

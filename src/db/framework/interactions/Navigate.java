@@ -244,7 +244,6 @@ public class Navigate {
             if (StepUtils.ie() && MainRunner.booleanParam("require_authentication")) {
                 MainRunner.authenticationIeInit();
             }
-            //Utils.ThreadWatchDog twd = new Utils.ThreadWatchDog(null, 60000, "ThreadWatchDog:visit(" + link + ")", () -> stopPageLoad());
             MainRunner.getWebDriver().get(givenURL);
             //twd.interrupt();
             Wait.forPageReady(urlFromJSON ? pageURL.replace(".url", "") : null);
@@ -346,8 +345,6 @@ public class Navigate {
 
         JavascriptExecutor scriptExe = ((JavascriptExecutor) MainRunner.getWebDriver());
         try {
-            //System.err.print("$");
-            //System.out.print("StepUtils.execJavascript(): " + script + ":");
             return scriptExe.executeScript(script, args);
         } catch (Exception ex) {
             return "";

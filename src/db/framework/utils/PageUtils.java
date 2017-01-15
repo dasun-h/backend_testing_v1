@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import static db.framework.utils.Utils.log;
+
 /**
  * This class pulls & manages data from page & panel JSON files
  */
@@ -303,8 +305,8 @@ public class PageUtils {
         }
 
         if (includedDataFiles == null) {
-            // System.out.println("No value found for " + pageName + "." + elementName);
-            return result;
+            log.debug("No value found for " + pagePath + "." + elementName);
+            return null;
         }
 
         int count = includedDataFiles.length();

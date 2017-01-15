@@ -28,6 +28,7 @@ public class Sample extends StepUtils{
 
     @And("^I verify yahoo home page$")
     public void I_verify_yahoo_home_page() throws Throwable {
+        onPage("yahoo_home");
         Assert.assertTrue("ERROR-APP: Yahoo logo is not displayed", elementPresent("yahoo_home.verify_page"));
         Assert.assertTrue("ERROR-APP: Yahoo logo text is incorrect", getText("yahoo_home.logo_text").equalsIgnoreCase("Yahoo"));
         Assert.assertTrue("ERROR-APP: Yahoo left navigation bar is not displayed", elementPresent("yahoo_home.left_navigation_bar"));

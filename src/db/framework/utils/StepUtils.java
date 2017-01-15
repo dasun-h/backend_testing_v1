@@ -11,6 +11,8 @@ import gherkin.formatter.model.Result;
 import org.junit.Assert;
 import org.openqa.selenium.*;
 import org.openqa.selenium.Point;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import javax.imageio.ImageIO;
 import java.awt.Dimension;
@@ -24,12 +26,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static db.framework.interactions.Elements.element;
+import static db.framework.runner.MainRunner.isAlertPresent;
 
 /**
  * This class contains page interaction and information methods to help write test steps.
  */
 public abstract class StepUtils {
     protected ScenarioImpl scenario = null;
+
     /**
      * Checks if using chrome
      *
@@ -102,12 +106,8 @@ public abstract class StepUtils {
      * Closes an alert if present - if no alert, nothing happens
      */
     public static void closeAlert() {
-        // safari doesn't support alerts
-        if (safari()) {
-            return;
-        }
-
-        MainRunner.closeAlert();
+        if (isAlertPresent())
+            MainRunner.closeAlert();
     }
 
     /**
