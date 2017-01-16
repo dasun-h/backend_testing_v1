@@ -1,8 +1,8 @@
 package db.shared.resources.actions.page_object;
 
-import org.junit.Assert;
-import db.shared.utils.CommonUtils;
 import db.framework.utils.StepUtils;
+import db.shared.utils.CommonUtils;
+import org.junit.Assert;
 
 import static db.framework.interactions.Clicks.javascriptClick;
 import static db.framework.interactions.Elements.element;

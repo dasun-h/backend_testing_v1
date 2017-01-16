@@ -1,22 +1,17 @@
 package db.framework.utils;
 
-import com.google.gson.internal.LinkedTreeMap;
 import cucumber.api.Scenario;
 import cucumber.runtime.ScenarioImpl;
 import db.framework.interactions.Elements;
 import db.framework.interactions.Navigate;
 import db.framework.interactions.Wait;
 import db.framework.runner.MainRunner;
-import gherkin.formatter.model.Result;
 import org.junit.Assert;
-import org.openqa.selenium.*;
+import org.openqa.selenium.OutputType;
 import org.openqa.selenium.Point;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.TakesScreenshot;
 
 import javax.imageio.ImageIO;
-import java.awt.Dimension;
-import java.awt.Rectangle;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;

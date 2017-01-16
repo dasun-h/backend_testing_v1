@@ -4,7 +4,6 @@ import db.framework.runner.MainRunner;
 import db.framework.utils.PageElement;
 import db.framework.utils.StepUtils;
 import db.framework.utils.Utils;
-import io.appium.java_client.MobileBy;
 import org.junit.Assert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;

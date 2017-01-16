@@ -5,15 +5,11 @@ import com.github.mkolisnyk.cucumber.runner.ExtendedCucumberOptions;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import cucumber.api.CucumberOptions;
-import cucumber.api.Scenario;
 import cucumber.api.testng.AbstractTestNGCucumberTests;
 import cucumber.api.testng.TestNGCucumberRunner;
 import db.framework.interactions.Navigate;
-import db.framework.utils.EnvironmentVariableRetriever;
-import db.framework.utils.ScenarioHelper;
 import db.framework.utils.StepUtils;
 import db.framework.utils.Utils;
-import net.lightbody.bmp.BrowserMobProxy;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
@@ -29,16 +25,11 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.URLDecoder;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static db.framework.runner.MainRunner.features;
-import static db.framework.runner.MainRunner.scenarios;
 import static db.framework.utils.EnvironmentVariableRetriever.*;
-import static db.framework.utils.ScenarioHelper.isScenarioPassed;
 import static db.framework.utils.StepUtils.*;
 import static java.lang.Runtime.getRuntime;
 
@@ -166,8 +157,6 @@ public class MainRunner extends AbstractTestNGCucumberTests {
     public static ArrayList<String> URLStack = new ArrayList<>();
 
 
-    public static ArrayList<String> featureScenarios = new ArrayList<>();
-
     /**
      * The current URL
      */
@@ -184,7 +173,8 @@ public class MainRunner extends AbstractTestNGCucumberTests {
      */
     public static void main(String[] argv) throws Throwable {
         getEnvVars();
-        featureScenarios = getFeatureScenarios();
+
+        ArrayList<String> featureScenarios = getFeatureScenarios();
         if (featureScenarios == null) {
             throw new Exception("Error getting scenarios");
         }
@@ -222,6 +212,8 @@ public class MainRunner extends AbstractTestNGCucumberTests {
 
         featureScenarios.add("--glue");
         featureScenarios.add("db.shared.steps");
+        featureScenarios.add("--plugin");
+        featureScenarios.add("db.framework.utils.DBFormatter");
         featureScenarios.add("--plugin");
         featureScenarios.add("html:logs");
 

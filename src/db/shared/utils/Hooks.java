@@ -1,10 +1,10 @@
 package db.shared.utils;
 
-import db.framework.runner.MainRunner;
-import db.framework.utils.*;
 import cucumber.api.Scenario;
 import cucumber.api.java.After;
 import cucumber.api.java.Before;
+import db.framework.runner.MainRunner;
+import db.framework.utils.*;
 import gherkin.formatter.model.Result;
 import org.junit.Assert;
 

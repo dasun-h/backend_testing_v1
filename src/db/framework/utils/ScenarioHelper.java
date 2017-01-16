@@ -1,9 +1,9 @@
 package db.framework.utils;
 
 import com.google.gson.internal.LinkedTreeMap;
-import db.framework.runner.MainRunner;
 import cucumber.api.Scenario;
 import cucumber.runtime.ScenarioImpl;
+import db.framework.runner.MainRunner;
 import gherkin.formatter.model.Result;
 
 import java.util.ArrayList;

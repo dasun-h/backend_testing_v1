@@ -1,16 +1,14 @@
 package db.shared.resources.actions.page_object;
 
-import org.junit.Assert;
-import db.shared.steps.DB_Tester;
 import db.framework.utils.StepUtils;
+import db.shared.steps.DB_Tester;
+import org.junit.Assert;
 
 import java.util.*;
 
 import static db.framework.interactions.Clicks.click;
 import static db.framework.interactions.Clicks.clickIfPresent;
-import static db.framework.interactions.Elements.element;
-import static db.framework.interactions.Elements.findElements;
-import static db.framework.interactions.Elements.getIndexedText;
+import static db.framework.interactions.Elements.*;
 import static db.framework.interactions.Wait.untilElementPresent;
 
 

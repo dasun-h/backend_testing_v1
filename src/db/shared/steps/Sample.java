@@ -2,19 +2,14 @@ package db.shared.steps;
 
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
-import cucumber.runtime.PendingException;
 import db.framework.interactions.Clicks;
 import db.framework.interactions.Navigate;
 import db.framework.interactions.TextBoxes;
-import org.junit.Assert;
 import db.framework.utils.StepUtils;
+import org.junit.Assert;
 
-import static db.framework.interactions.Clicks.click;
-import static db.framework.interactions.Clicks.javascriptClick;
-import static db.framework.interactions.Elements.*;
-import static db.framework.interactions.Wait.untilElementPresent;
+import static db.framework.interactions.Elements.elementPresent;
+import static db.framework.interactions.Elements.getText;
 
 /**
  * Created by dasunh on 1/3/2017.

@@ -20,8 +20,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-import static db.framework.runner.MainRunner.sauceKey;
-import static db.framework.runner.MainRunner.sauceUser;
 import static db.framework.runner.MainRunner.*;
 
 /**

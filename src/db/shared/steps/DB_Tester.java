@@ -5,21 +5,19 @@ import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import db.framework.interactions.Navigate;
-import org.junit.Assert;
+import db.framework.utils.StepUtils;
 import db.shared.resources.actions.page_object.AddUsersPage;
 import db.shared.resources.actions.page_object.EditUsersPage;
 import db.shared.resources.actions.page_object.HomePage;
-import db.framework.utils.StepUtils;
 import db.shared.utils.database.models.CustomerService;
+import org.junit.Assert;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static db.framework.interactions.Clicks.click;
 import static db.framework.interactions.Clicks.javascriptClick;
-import static db.framework.interactions.Elements.element;
-import static db.framework.interactions.Elements.getIndexedText;
-import static db.framework.interactions.Elements.getText;
+import static db.framework.interactions.Elements.*;
 import static db.framework.interactions.Wait.untilElementPresent;
 
 public class DB_Tester extends StepUtils {
