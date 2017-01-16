@@ -3,7 +3,6 @@ package db.framework.runner;
 import db.framework.utils.StepUtils;
 import db.framework.utils.Utils;
 import org.junit.Assert;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.edge.EdgeDriver;
@@ -32,17 +31,17 @@ class WebDriverConfigurator {
      * @param capabilities preferred configurations in UI client
      * @return driver
      */
-    static WebDriver initDriver(DesiredCapabilities capabilities) {
+    static RemoteWebDriver initDriver(DesiredCapabilities capabilities) {
         if (capabilities == null) {
             capabilities = initBrowserCapabilities();
         }
-        WebDriver driver;
+        RemoteWebDriver driver;
         if (useSauceLabs) {
             driver = initSauceLabs(capabilities);
 
             // print the session id of saucelabs for tracking job on sauceLabs
             if (driver instanceof RemoteWebDriver) {
-                System.out.println("Link to your job: https://saucelabs.com/jobs/" + ((RemoteWebDriver) driver).getSessionId());
+                System.out.println("Link to your job: https://saucelabs.com/jobs/" + driver.getSessionId());
             } else {
                 System.out.println("no RemoteWebDriver instance : " + driver);
             }
@@ -52,7 +51,7 @@ class WebDriverConfigurator {
         Assert.assertNotNull("Driver should have been initialized by now", driver);
 
         if (!remoteOS.equals("Linux")) {
-            WebDriver.Timeouts to = driver.manage().timeouts();
+            RemoteWebDriver.Timeouts to = driver.manage().timeouts();
             to.pageLoadTimeout(timeout, TimeUnit.SECONDS);
             to.setScriptTimeout(timeout, TimeUnit.SECONDS);
         }
@@ -65,8 +64,8 @@ class WebDriverConfigurator {
  * @param capabilities preferred configurations for browser driver
  * @return instance of browser driver with preferred capabilities
  */
-    private static WebDriver initBrowser(DesiredCapabilities capabilities) {
-        WebDriver driver = null;
+    private static RemoteWebDriver initBrowser(DesiredCapabilities capabilities) {
+        RemoteWebDriver driver = null;
         switch (MainRunner.browser.toLowerCase()) {
             case "ie":
             case "internetexplorer":
@@ -172,7 +171,7 @@ class WebDriverConfigurator {
         }
     }
 
-    private static WebDriver initSauceLabs(DesiredCapabilities capabilities) {
+    private static RemoteWebDriver initSauceLabs(DesiredCapabilities capabilities) {
         try {
             // remove quoted chars
             remoteOS = remoteOS.replace("\"", "");

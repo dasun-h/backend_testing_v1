@@ -14,7 +14,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
-import org.openqa.selenium.*;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -125,12 +127,6 @@ public class MainRunner extends AbstractTestNGCucumberTests {
     public static String browserVersion = getEnvOrExParam("browser_version");
 
     /**
-     * Whether to close browser after testing is complete. False if "DEBUG" env variable is present
-     */
-    public static Boolean closeBrowserAtExit = true;
-
-
-    /**
      * URL to start at and use as a base as given in "website" env variable
      */
     public static String url = getEnvVar("website") != null ? getEnvVar("website") : WEBSITE;
@@ -162,7 +158,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
      */
     public static String currentURL = "";
 
-    private static WebDriver driver = null;
+    private static RemoteWebDriver driver = null;
     private static long ieAuthenticationTs = System.currentTimeMillis() - 10000; // set authentication checking interval out of range
 
     /**
@@ -223,8 +219,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         PageHangWatchDog.init();
 
         try {
-            runStatus = cucumber.api.cli.Main.run(featureScenarios.toArray(new String[featureScenarios.size()]),
-                    Thread.currentThread().getContextClassLoader());
+            runStatus = cucumber.api.cli.Main.run(featureScenarios.toArray(new String[featureScenarios.size()]), Thread.currentThread().getContextClassLoader());
         } catch (Throwable e) {
             e.printStackTrace();
             runStatus = 1;
@@ -263,9 +258,6 @@ public class MainRunner extends AbstractTestNGCucumberTests {
             System.out.println("SauceLab Username: " + sauceUser);
         } else
             System.out.println("SauceLab not specified in the environment variables file");
-
-        // close browser at exist unless debugMode is on
-        closeBrowserAtExit = !debugMode;
 
         if ((url == null || url.isEmpty()) && (WEBSITE == null || WEBSITE.isEmpty())) {
             Assert.fail("\"website\" variable required to test a website");
@@ -336,11 +328,11 @@ public class MainRunner extends AbstractTestNGCucumberTests {
     }
 
     /**
-     * Gets the current webDriver instance or tries to create one
+     * Gets the current RemoteWebDriver instance or tries to create one
      *
-     * @return current webDriver instance
+     * @return current RemoteWebDriver instance
      */
-    public static synchronized WebDriver getWebDriver() {
+    public static synchronized RemoteWebDriver getWebDriver() {
         if (URLStack.size() == 0) {
             URLStack.add(url);
         }
@@ -371,7 +363,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         System.err.println("Cannot initialize driver: exiting test...");
         System.out.println("Quit the driver " + driver);
         if (driver != null) {
-            driverQuit();
+            driver.quit();
         }
         System.exit(-1);
         // return is unreachable but IDE doesn't realize, return non-null
@@ -558,7 +550,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
      * Closes an alert if present
      */
 
-    public static boolean isAlertPresent(){
+    public static boolean isAlertPresent() {
         boolean foundAlert;
         WebDriverWait wait = new WebDriverWait(driver, 10);
         try {
@@ -575,21 +567,6 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         if (driver != null) {
             driver.switchTo().alert().accept();
             Assert.assertFalse("Alert is still present", isAlertPresent());
-        }
-    }
-
-    @Test(groups = "backend_testing", description = "Example of using TestNGCucumberRunner to invoke Cucumber")
-    public void runCukes() {
-        new TestNGCucumberRunner(getClass()).runCukes();
-    }
-
-
-    @AfterMethod
-    public void takeScreenShotOnFailure(ITestResult testResult) throws IOException {
-        if (testResult.getStatus() == ITestResult.FAILURE) {
-            System.out.println(testResult.getStatus());
-            File scrFile = ((TakesScreenshot) getWebDriver()).getScreenshotAs(OutputType.FILE);
-            FileUtils.copyFile(scrFile, new File("target/img_cucumber_jvm.jpg"));
         }
     }
 
@@ -623,37 +600,25 @@ public class MainRunner extends AbstractTestNGCucumberTests {
         return false;
     }
 
+    /**
+     * Close Currently Running RemoteWebDriver Instance
+     */
     private static void close() {
-        if (browser.equals("none"))
-            return;
         if (useSauceLabs) {
             if (driver instanceof RemoteWebDriver) {
-                System.out.println("Link to your job: https://saucelabs.com/jobs/" + ((RemoteWebDriver) driver).getSessionId());
+                System.out.println("Link to your job: https://saucelabs.com/jobs/" + (driver).getSessionId());
             }
-            driverQuit();
-        } else if (closeBrowserAtExit) {
-            System.out.println("Closing driver...");
-            if (driver != null) {
-                driverQuit();
-            }
-        }
-    }
-
-    private static void driverQuit() {
-        try {
             driver.quit();
-            if (ie()) {
-                try {
-                    driver.quit();
-                } catch (Exception | Error e) {
-                    // nothing we can do if this doesn't work
-                }
-            }
-        } catch (Exception e) {
-            // skip error message on saucelab remote driver
-            if (!useSauceLabs) {
-                System.err.println("Error closing driver. You may need to clean up execution machine. error: " + e);
-            }
+        }
+        if (!browser.equals("firefox")) {
+            System.out.println("Closing driver...");
+            driver.close();
+        } else {
+            System.out.println("Closing firefox driver...");
+            driver.quit();
+        }
+        if (driver != null) {
+            driver.quit();
         }
         driver = null;
     }
@@ -741,6 +706,20 @@ public class MainRunner extends AbstractTestNGCucumberTests {
             // ignore all errors
         }
         return 1;
+    }
+
+    @Test(groups = "backend_testing", description = "Example of using TestNGCucumberRunner to invoke Cucumber")
+    public void runCukes() {
+        new TestNGCucumberRunner(getClass()).runCukes();
+    }
+
+    @AfterMethod
+    public void takeScreenShotOnFailure(ITestResult testResult) throws IOException {
+        if (testResult.getStatus() == ITestResult.FAILURE) {
+            System.out.println(testResult.getStatus());
+            File scrFile = getWebDriver().getScreenshotAs(OutputType.FILE);
+            FileUtils.copyFile(scrFile, new File("target/img_cucumber_jvm.jpg"));
+        }
     }
 
     public static class PageHangWatchDog extends Thread {
