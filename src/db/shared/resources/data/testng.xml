@@ -6,7 +6,7 @@
     </listeners>
     <test name="backend testing" annotations="JDK" preserve-order="true">
         <classes>
-            <class name="db.framework.runner.MainRunner"/>
+            <class name="db.framework.runner.CucumberTestNGRunner"/>
         </classes>
     </test>
 </suite>

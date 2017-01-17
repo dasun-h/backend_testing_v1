@@ -1,32 +1,20 @@
 package db.framework.runner;
 
-import com.github.mkolisnyk.cucumber.runner.ExtendedCucumber;
-import com.github.mkolisnyk.cucumber.runner.ExtendedCucumberOptions;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import cucumber.api.CucumberOptions;
-import cucumber.api.testng.AbstractTestNGCucumberTests;
-import cucumber.api.testng.TestNGCucumberRunner;
 import db.framework.interactions.Navigate;
 import db.framework.utils.StepUtils;
 import db.framework.utils.Utils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
-import org.junit.runner.RunWith;
 import org.openqa.selenium.Dimension;
-import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.testng.ITestResult;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,25 +26,8 @@ import static java.lang.Runtime.getRuntime;
 /**
  * This class handles the configuration and running of cucumber scenarios and features
  */
-@RunWith(ExtendedCucumber.class)
-@ExtendedCucumberOptions(
-        jsonReport = "target/cucumber.json",
-        retryCount = 1,
-        detailedReport = true,
-        detailedAggregatedReport = true,
-        overviewReport = true,
-        toPDF = true,
-        outputFolder = "target"
-)
-@CucumberOptions(
-        features = {"src/db/projects/sample/features/"},
-        plugin = {"pretty", "html:target/site/cucumber-pretty",
-                "json:target/cucumber.json", "pretty:target/cucumber-pretty.txt",
-                "usage:target/cucumber-usage.json", "junit:target/cucumber-results.xml"},
-        glue = {"db.shared.steps"},
-        tags = {"@scenario1"}
-)
-public class MainRunner extends AbstractTestNGCucumberTests {
+
+public class MainRunner {
 
     /**
      * Contains OS to use when executing on saucelabs as given in "remote_os" env variable
@@ -603,7 +574,7 @@ public class MainRunner extends AbstractTestNGCucumberTests {
     /**
      * Close Currently Running RemoteWebDriver Instance
      */
-    private static void close() {
+    public static void close() {
         if (useSauceLabs) {
             if (driver instanceof RemoteWebDriver) {
                 System.out.println("Link to your job: https://saucelabs.com/jobs/" + (driver).getSessionId());
@@ -706,20 +677,6 @@ public class MainRunner extends AbstractTestNGCucumberTests {
             // ignore all errors
         }
         return 1;
-    }
-
-    @Test(groups = "backend_testing", description = "Example of using TestNGCucumberRunner to invoke Cucumber")
-    public void runCukes() {
-        new TestNGCucumberRunner(getClass()).runCukes();
-    }
-
-    @AfterMethod
-    public void takeScreenShotOnFailure(ITestResult testResult) throws IOException {
-        if (testResult.getStatus() == ITestResult.FAILURE) {
-            System.out.println(testResult.getStatus());
-            File scrFile = getWebDriver().getScreenshotAs(OutputType.FILE);
-            FileUtils.copyFile(scrFile, new File("target/img_cucumber_jvm.jpg"));
-        }
     }
 
     public static class PageHangWatchDog extends Thread {
