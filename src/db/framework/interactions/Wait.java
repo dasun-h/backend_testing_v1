@@ -21,13 +21,26 @@ import static db.framework.utils.Utils.errLog;
  */
 public class Wait {
 
+    /**
+     * Waits until the given condition method returns true
+     *
+     * @param condition method to check whether we're done waiting
+     * @return true if condition returned true, false if timeout occurred
+     */
     public static boolean until(BooleanSupplier condition) {
-        return until(condition, null);
+        return until(condition, MainRunner.timeouts().general());
     }
 
+    /**
+     * Waits a number of seconds until the given condition method returns true
+     *
+     * @param condition method to check whether we're done waiting
+     * @param seconds number of seconds to wait before timing out (default 5)
+     * @return true if condition returned true, false if timeout occurred
+     */
     public static boolean until(BooleanSupplier condition, Integer seconds) {
         try {
-            WebDriverWait wait = new WebDriverWait(MainRunner.getWebDriver(), seconds != null ? seconds : 5);
+            WebDriverWait wait = new WebDriverWait(MainRunner.getWebDriver(), seconds);
             wait.until((WebDriver driver) -> condition.getAsBoolean());
             return true;
         } catch (Exception ex) {
@@ -117,7 +130,7 @@ public class Wait {
      * @return true if element is present
      */
     public static boolean untilElementPresent(String selector) {
-        return secondsUntilElementPresent(Elements.element(selector), 5);
+        return secondsUntilElementPresent(Elements.element(selector), MainRunner.timeouts().untilElementPresent());
     }
 
     /**
@@ -127,7 +140,7 @@ public class Wait {
      * @return true if element is present
      */
     public static boolean untilElementPresent(By selector) {
-        return secondsUntilElementPresent(selector, 3);
+        return secondsUntilElementPresent(selector, MainRunner.timeouts().untilElementPresent());
     }
 
     /**
@@ -210,7 +223,7 @@ public class Wait {
     public static void untilElementPresentWithRefresh(By selector) {
         try {
             for (int i = 0; i < 2; i++) {
-                if (secondsUntilElementPresent(selector, 3)) {
+                if (secondsUntilElementPresent(selector, MainRunner.timeouts().untilElementPresent())) {
                     return;
                 }
                 Navigate.browserRefresh();
@@ -254,7 +267,7 @@ public class Wait {
     public static void untilElementPresentWithRefreshAndClick(By waitFor, By toClick) {
         try {
             for (int i = 0; i < 2; i++) {
-                if (secondsUntilElementPresent(waitFor, 3)) {
+                if (secondsUntilElementPresent(waitFor, MainRunner.timeouts().untilElementPresent())) {
                     Clicks.click(toClick);
                     return;
                 }
@@ -272,10 +285,10 @@ public class Wait {
      *
      * @param selector     String selector in format "page_name.element_name"
      * @param attr         attribute to use
-     * @param initialValue value that should change
+     * @param expectedValue value to wait for attribute to become
      */
-    public static void attributeChanged(String selector, String attr, String initialValue) {
-        attributeChanged(Elements.element(selector), attr, initialValue);
+    public static void attributeChanged(String selector, String attr, String expectedValue) {
+        attributeChanged(Elements.element(selector), attr, expectedValue);
     }
 
     /**
@@ -283,10 +296,10 @@ public class Wait {
      *
      * @param selector     By selector to use
      * @param attr         attribute to use
-     * @param initialValue value that should change
+     * @param expectedValue value to wait for attribute to become
      */
-    public static void attributeChanged(By selector, String attr, String initialValue) {
-        attributeChanged(Elements.findElement(selector), attr, initialValue);
+    public static void attributeChanged(By selector, String attr, String expectedValue) {
+        attributeChanged(Elements.findElement(selector), attr, expectedValue);
     }
 
     /**
@@ -322,35 +335,37 @@ public class Wait {
     }
 
     /**
-     * Waits for any loading activities on the page to complete
+     * Wait for any loading activities on the page to complete
      */
     public static void forPageReady() {
         forPageReady(null);
     }
 
     /**
-     * Waits for any loading activities and checks if the page html contains some text
+     * Wait for any loading activities and waits for page verify_page element to load (if provided)
      *
-     * @param pageName text to look for in page html
-     * @return true if page is loaded and contains specified text
+     * @param pageName page you expect to be loaded
+     * @return true if page is loaded and pageName.verify_page element is loaded
      */
     public static boolean forPageReady(final String pageName) {
+
         int waitTime = MainRunner.timeout;
         try {
-            new WebDriverWait(MainRunner.getWebDriver(), waitTime).until((WebDriver wDriver) -> {
+        new WebDriverWait(MainRunner.getWebDriver(), waitTime).until((WebDriver wDriver) -> {
                 if (StepUtils.safari()) {
                     Utils.threadSleep(100, null);
                 }
-                return animationDone() && ajaxDone() && isPageLoaded(pageName);
+                return animationDone() && ajaxDone() && isPageLoaded();
             });
-        } catch (Exception e) {
-            // IE likes to throw a lot of garbage exceptions, don't bother printing them out
-            if (MainRunner.debugMode && !StepUtils.ie() && !StepUtils.safari()) {
-                System.out.println("Exception in forPageReady: ");
-                System.err.println(e.getMessage());
+            } catch (Exception e) {
+                // IE likes to throw a lot of garbage exceptions, don't bother printing them out
+                if (MainRunner.debugMode && !StepUtils.ie() && !StepUtils.safari()) {
+                    System.out.println("Exception in forPageReady: ");
+                    System.err.println(e.getMessage());
+                }
+                return false;
             }
-            return false;
-        }
+
 
         if (pageName != null) {
             By verifyElement = Elements.element(pageName + ".verify_page");
@@ -358,7 +373,9 @@ public class Wait {
                 untilElementPresent(verifyElement);
             }
         }
+
         StepUtils.closeJQueryPopup();
+        //System.out.println(".exit");
         return true;
     }
 
@@ -376,18 +393,14 @@ public class Wait {
     }
 
     /**
-     * Checks if the page is loaded
+     * Checks if the document ready state is no longer loading
      *
-     * @param containText test to check for on page. Leave null to skip check
      * @return true if page is loaded
      */
-    public static boolean isPageLoaded(String containText) {
-        String ret = (String) Navigate.execJavascript("return document.readyState");
+    public static boolean isPageLoaded() {
+        String state = (String) Navigate.execJavascript("return document.readyState;");
         //System.out.print("." + ret);
-        boolean isReady = ret.matches("complete|loaded|interactive");
-        if (containText != null)
-            isReady &= getPageText().contains(containText);
-        return isReady;
+        return state.matches("complete|loaded|interactive");
     }
 
     /**
@@ -396,10 +409,26 @@ public class Wait {
      * @return true if no active ajax calls
      */
     public static boolean ajaxDone() {
-        Long queries = (Long) Navigate.execJavascript("return jQuery.active;");
-        //System.out.print("." + queries + " AJAX");
-        String url = MainRunner.getWebDriver().getCurrentUrl();
-        return queries == 0;
+        StepUtils.ajaxCheck = true;
+        Utils.redirectSErr();
+        try {
+
+            //below script returns either string or long value, so fetching the results conditionally to avoid type cast error
+            Object jsResponse = Navigate.execJavascript("return jQuery.active;");
+            Long queries;
+
+            if (jsResponse instanceof Long) {
+                queries = (Long) jsResponse;
+            } else {
+                System.err.println("Unable to get num ajax calls!");
+                return true;
+            }
+            MainRunner.getCurrentUrl();
+            return queries == 0;
+        } finally {
+            Utils.resetSErr();
+            StepUtils.ajaxCheck = false;
+        }
     }
 
     /**

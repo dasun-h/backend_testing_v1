@@ -5,20 +5,27 @@ import db.framework.utils.PageElement;
 import db.framework.utils.StepUtils;
 import db.framework.utils.Utils;
 import org.junit.Assert;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.Point;
+import org.openqa.selenium.interactions.Action;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.pagefactory.ByAll;
 
+import java.awt.*;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static db.framework.utils.Utils.errLog;
+import static org.javalite.common.Util.readFile;
 
 /**
  * A collection of ways to get elements and other information about them
@@ -323,7 +330,7 @@ public class Elements {
 
     /**
      * Checks if an element is currently visible on the screen using javascript
-     *
+     * <p>
      * <p>
      * NOTE: This method will not scroll to the element. It will just return true or false.
      * </p>
@@ -455,8 +462,8 @@ public class Elements {
      * @return text of the element or "null" if element does not exist
      */
     public static String getText(String selector) {
-    return getText(element(selector));
-}
+        return getText(element(selector));
+    }
 
     /**
      * Gets the text of an element or "null" if element does not exist
@@ -477,7 +484,7 @@ public class Elements {
     }
 
     public static String getIndexedText(String selector, int index) {
-        return getIndexedText(element(selector),index);
+        return getIndexedText(element(selector), index);
     }
 
     public static String getIndexedText(By e, int index) {
@@ -485,6 +492,85 @@ public class Elements {
             return findElements(e).get(index).getText().toString();
         } catch (NullPointerException ex) {
             return "null";
+        }
+    }
+
+    public static void dragAndDropForHTML5(By draggable, By droppable) throws InterruptedException, AWTException {
+        try {
+            Wait.untilElementPresent(draggable);
+
+            // load jScript to convert any locator to css
+            String jCSSConverterFile = "css_selector.js";
+            String jCSSConverterPath = "src/db/framework/javascripts/" + jCSSConverterFile;
+            File fileForJCSSConverter = new File(jCSSConverterPath);
+            String JS_BUILD_CSS_SELECTOR1 = fileForJCSSConverter.getAbsolutePath();
+            final String load_jquery_js1 = readFile(JS_BUILD_CSS_SELECTOR1).toString();
+
+            JavascriptExecutor js = MainRunner.getWebDriver();
+
+            // get the drag element
+            WebElement drag = MainRunner.getWebDriver().findElement(draggable);
+
+            // build the Css selector for the draggable element
+            String selectorDrag = (String) js.executeScript(load_jquery_js1, drag);
+
+            // get the drop element
+            WebElement drop = MainRunner.getWebDriver().findElement(droppable);
+
+            // build the Css selector for the droppable element
+            String selectorDrop = (String) js.executeScript(load_jquery_js1, drop);
+
+            // load drag and drop helper
+            String dragDropFile = "drag_and_drop_helper.js";
+            String dragDropPath = "src/db/framework/javascripts/" + dragDropFile;
+            File fileForDragDrop = new File(dragDropPath);
+            final String DRAG_AND_DROP_LOAD_SCRIPT = fileForDragDrop.getAbsolutePath();
+            String drag_and_drop_js = readFile(DRAG_AND_DROP_LOAD_SCRIPT);
+
+            // load jQuery helper
+            String jQueryFile = "jquery_load_helper.js";
+            String jQueryPath = "src/db/framework/javascripts/" + jQueryFile;
+            File fileForJQuery = new File(jQueryPath);
+            final String JQUERY_LOAD_SCRIPT = fileForJQuery.getAbsolutePath();
+            String load_jquery_js = readFile(JQUERY_LOAD_SCRIPT);
+
+            MainRunner.getWebDriver().manage().timeouts().setScriptTimeout(10, TimeUnit.SECONDS);
+
+            //dynamically load jQuery
+            js.executeAsyncScript(load_jquery_js);
+
+            //perform drag&drop
+            (MainRunner.getWebDriver()).executeScript(drag_and_drop_js +
+                    "$('" + selectorDrag + "').simulateDragDrop({ dropTarget: '" + selectorDrop + "'});");
+        } catch (NullPointerException ex) {
+            Assert.fail("Drag and Drop Failed ....");
+        }
+    }
+
+    public static void dragAndDropForNormalApps(By draggable, By droppable) throws InterruptedException, AWTException {
+        try {
+            Actions drag_drop = new Actions(MainRunner.getWebDriver());
+            //Get x and y of WebElement to drag to
+            int toLocationX = findElement(droppable).getLocation().getX();
+            int toLocationY = findElement(droppable).getLocation().getY();
+            int fromLocationX = findElement(draggable).getLocation().getX();
+            int fromLocationY = findElement(draggable).getLocation().getY();
+            if (StepUtils.firefox()) {
+                //Click and hold the draggable element
+                drag_drop.clickAndHold(findElement(draggable)).perform();
+                //Move mouse to the draggable element location
+                new Robot().mouseMove(fromLocationX, fromLocationY);
+                Utils.threadSleep(2000, null);
+                //Move mouse to droppable location
+                new Robot().mouseMove(toLocationX, toLocationY);
+                //Drop the draggable element
+                drag_drop.release(findElement(droppable)).perform();
+            } else if (StepUtils.chrome()) {
+                // For Chrome still no workaround for drag and drop
+                drag_drop.dragAndDrop(findElement(draggable), findElement(droppable)).release().perform();
+            }
+        } catch (NullPointerException ex) {
+            Assert.fail("Drag and Drop Failed ....");
         }
     }
 }

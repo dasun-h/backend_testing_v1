@@ -1,0 +1,8 @@
+{
+  "url": "http://the-internet.herokuapp.com/drag_and_drop",
+  "verify_page": "cssSelector, .example",
+  "draggable": "cssSelector, #column-a",
+  "droppable": "cssSelector, #column-b"
+}
+
+

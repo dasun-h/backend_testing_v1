@@ -2,7 +2,9 @@ package db.framework.runner;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import cucumber.api.cli.Main;
 import db.framework.interactions.Navigate;
+import db.framework.interactions.Wait;
 import db.framework.utils.StepUtils;
 import db.framework.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
@@ -15,6 +17,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -61,6 +64,11 @@ public class MainRunner {
      * Path to feature file to execute from
      */
     public static String scenarios = getEnvVar("scenarios") != null ? getEnvVar("scenarios") : SCENARIOS;
+
+    /**
+     * get defined tags
+     */
+    public static String tags = getEnvVar("tags") != null ? getEnvVar("tags") : TAGS;
 
     /**
      * Whether we're running in debug mode
@@ -142,12 +150,17 @@ public class MainRunner {
         getEnvVars();
 
         ArrayList<String> featureScenarios = getFeatureScenarios();
+
         if (featureScenarios == null) {
             throw new Exception("Error getting scenarios");
         }
 
         // add any tags
-        String tags = getEnvOrExParam("tags");
+        if ((tags == null || tags.isEmpty())) {
+            Assert.fail("Tags are not defined");
+        } else {
+            System.out.println("Tags Given: " + tags);
+        }
         if (tags != null) {
             featureScenarios.add("--tags");
             featureScenarios.add(tags);
@@ -187,10 +200,22 @@ public class MainRunner {
         System.out.println("Browser Version:" + browserVersion);
         driver = getWebDriver();
 
-        PageHangWatchDog.init();
-
         try {
-            runStatus = cucumber.api.cli.Main.run(featureScenarios.toArray(new String[featureScenarios.size()]), Thread.currentThread().getContextClassLoader());
+            Thread cucumberThread = new Thread(() -> {
+                int status = 1;
+                try {
+                    status = Main.run(featureScenarios.toArray(new String[featureScenarios.size()]),
+                            Thread.currentThread().getContextClassLoader());
+                } catch (IOException e) {
+                    System.err.println("IOException in cucumber run");
+                } finally {
+                    runStatus = status;
+                }
+            });
+            cucumberThread.start();
+            PageHangWatchDog.init(cucumberThread);
+            cucumberThread.join();
+
         } catch (Throwable e) {
             e.printStackTrace();
             runStatus = 1;
@@ -200,6 +225,10 @@ public class MainRunner {
                 System.exit(runStatus);
             }
         }
+    }
+
+    public static Timeouts timeouts() {
+        return Timeouts.instance();
     }
 
     public static void getEnvVars() {
@@ -591,6 +620,7 @@ public class MainRunner {
         if (driver != null) {
             driver.quit();
         }
+        driver.quit();
         driver = null;
     }
 
@@ -682,22 +712,24 @@ public class MainRunner {
     public static class PageHangWatchDog extends Thread {
         private final static long TIMEOUT = (StepUtils.safari() || StepUtils.ie() ? 130 : 95) * 1000;
         private final static int MAX_FAILURES = 5;
-        public static boolean timedOut = false;
+        private static Thread cucumberThread;
         private static PageHangWatchDog hangWatchDog;
         private static int failCount;
         private static boolean pause;
-        private String m_url;
+        private String currentUrl;
         private long ts;
 
         private PageHangWatchDog() {
             System.err.println("--> Start:PageHangWatchDog:" + new Date());
             this.reset(getWebDriver().getCurrentUrl());
+            this.setDaemon(true);
             this.start();
         }
 
-        public static void init() {
+        public static void init(Thread t) {
             if (hangWatchDog == null) {
                 hangWatchDog = new PageHangWatchDog();
+                cucumberThread = t;
             }
         }
 
@@ -708,7 +740,6 @@ public class MainRunner {
         public static void pause(boolean pause) {
             PageHangWatchDog.pause = pause;
             if (!pause) {
-                timedOut = false;
                 failCount = 0;
             }
         }
@@ -716,24 +747,33 @@ public class MainRunner {
         private void reset(String url) {
             this.ts = System.currentTimeMillis();
             if (url != null) {
-                this.m_url = url;
+                this.currentUrl = url;
                 failCount = 0;
             }
         }
 
         public void run() {
-            while (true) {
+            while (cucumberThread.isAlive()) {
                 try {
-                    if (pause || timedOut || !driverInitialized()) {
+                    if (!driverInitialized()) {
+                        continue;
+                    } else if (pause) {
+                        // if we've been waiting a while, send any browser command to prevent
+                        // dropping the sauce labs connection
+                        if (System.currentTimeMillis() - this.ts > TIMEOUT) {
+                            getWebDriver().getCurrentUrl();
+                            this.reset(this.currentUrl);
+                        }
                         continue;
                     }
                     String url = currentURL;
+                    //System.err.println("Watchdog tick:\n>old url: " + this.currentUrl + "\n>new url: " + url);
                     if (url.contains("about:blank")) {
                         continue;
                     }
-                    if (url.equals(this.m_url)) {
-                        if (System.currentTimeMillis() - this.ts > TIMEOUT) {
-                            System.err.println("--> PageHangWatchDog: timeout at " + this.m_url +
+                    if (url.equals(this.currentUrl)) {
+                        if(System.currentTimeMillis() - this.ts > TIMEOUT) {
+                            System.err.println("--> PageHangWatchDog: timeout at " + this.currentUrl +
                                     ", " + (MAX_FAILURES - failCount) + " failures until exit");
                             failCount++;
                             new Thread(() -> {
@@ -742,16 +782,16 @@ public class MainRunner {
                                 } catch (Exception e) {
                                     // sometimes IE fails to run js. Continue running.
                                 } finally {
-                                    if (browser.equalsIgnoreCase("ie")) {
+                                    if (StepUtils.ie())
                                         Navigate.browserRefresh();
-                                    }
                                 }
                             }).start();
 
                             this.reset(null);
                             if (failCount > MAX_FAILURES) {
-                                timedOut = true;
-                                System.err.println("PageHangWatchDog timeout! Test will fail after this step ends");
+                                System.err.println("PageHangWatchDog timeout! Pushing things along...");
+                                cucumberThread.interrupt();
+                                this.reset(null);
                             }
                         }
                     } else {

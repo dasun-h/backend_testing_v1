@@ -143,10 +143,6 @@ public class Hooks extends StepUtils {
         if (scenario.isFailed()) {
             Assert.fail("Scenario unexpectedly failed");
         }
-        if (MainRunner.PageHangWatchDog.timedOut) {
-            resumePageHangWatchDog();
-            Assert.fail("PageHangWatchDog timed out, failing test");
-        }
         System.out.println("-->Step duration: " + Utils.toDuration(System.currentTimeMillis() - stepStartTime) + "\n");
     }
 }

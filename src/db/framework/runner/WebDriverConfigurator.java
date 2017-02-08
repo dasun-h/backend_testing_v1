@@ -128,6 +128,7 @@ class WebDriverConfigurator {
                 chrome.addArguments("test-type");
                 chrome.addArguments("--disable-extensions");
                 capabilities.setCapability(ChromeOptions.CAPABILITY, chrome);
+                capabilities.setCapability(CapabilityType.ACCEPT_SSL_CERTS, true);
                 return capabilities;
             case "safari":
                 capabilities = DesiredCapabilities.safari();
@@ -141,6 +142,23 @@ class WebDriverConfigurator {
             default:
                 capabilities = DesiredCapabilities.firefox();
                 FirefoxProfile firefoxProfile = new FirefoxProfile();
+                firefoxProfile.setAcceptUntrustedCertificates(true);
+                firefoxProfile.setAssumeUntrustedCertificateIssuer(false);
+                firefoxProfile.setEnableNativeEvents(true);
+
+                firefoxProfile.setPreference("browser.download.folderList", 2);
+                firefoxProfile.setPreference("browser.download.manager.alertOnEXEOpen", false);
+                firefoxProfile.setPreference("browser.helperApps.neverAsk.saveToDisk", "application/msword, application/csv, application/ris, text/csv, image/png, application/pdf, text/html, text/plain, application/zip, application/x-zip, application/x-zip-compressed, application/download, application/octet-stream");
+                firefoxProfile.setPreference("browser.download.manager.showWhenStarting", false);
+                firefoxProfile.setPreference("browser.download.manager.focusWhenStarting", false);
+                firefoxProfile.setPreference("browser.download.useDownloadDir", true);
+                firefoxProfile.setPreference("browser.helperApps.alwaysAsk.force", false);
+                firefoxProfile.setPreference("browser.download.manager.alertOnEXEOpen", false);
+                firefoxProfile.setPreference("browser.download.manager.closeWhenDone", true);
+                firefoxProfile.setPreference("browser.download.manager.showAlertOnComplete", false);
+                firefoxProfile.setPreference("browser.download.manager.useWindow", false);
+                firefoxProfile.setPreference("services.sync.prefs.sync.browser.download.manager.showWhenStarting", false);
+                firefoxProfile.setPreference("pdfjs.disabled", true);
                 ArrayList<File> extensions = new ArrayList<>();
                 for (File f : extensions) {
                     try {
@@ -150,7 +168,9 @@ class WebDriverConfigurator {
                         Assert.fail("Cannot load extension");
                     }
                 }
+                capabilities.setCapability(CapabilityType.ACCEPT_SSL_CERTS, true);
                 capabilities.setCapability(FirefoxDriver.PROFILE, firefoxProfile);
+                capabilities.setCapability("marionette", false);
                 return capabilities;
         }
     }

@@ -1,0 +1,8 @@
+{
+  "url": "https://cloud.canopylabs.com/#/",
+  "verify_page": "cssSelector, .logo-link",
+  "user_name": "xpath, //input[@placeholder='Username']",
+  "password": "xpath, //input[@placeholder='Password']",
+  "login_btn": "xpath, //input[@value='Log In']"
+
+}

@@ -7,12 +7,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <project.name>sample</project.name>
-        <db_framework.version>0.0.181</db_framework.version>
+        <db_framework.version>0.0.3652</db_framework.version>
     </properties>
 
     <groupId>db</groupId>
     <artifactId>db-framework</artifactId>
-    <version>0.0.181</version>
+    <version>0.0.3652</version>
 
     <repositories>
         <repository>
@@ -58,7 +58,7 @@
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
-            <version>2.46.0</version>
+            <version>3.0.1</version>
         </dependency>
         <dependency>
             <groupId>info.cukes</groupId>
@@ -143,6 +143,16 @@
             <groupId>org.apache.maven.surefire</groupId>
             <artifactId>common-java5</artifactId>
             <version>2.16</version>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>6.10</version>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>6.10</version>
         </dependency>
     </dependencies>
 

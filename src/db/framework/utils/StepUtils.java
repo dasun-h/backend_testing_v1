@@ -30,6 +30,13 @@ public abstract class StepUtils {
     protected ScenarioImpl scenario = null;
 
     /**
+     * to track ajax check
+     */
+    public static boolean ajaxCheck = false;
+
+    public static ArrayList<String> expectedURLs;
+
+    /**
      * Checks if using chrome
      *
      * @return true if using chrome
@@ -117,7 +124,7 @@ public abstract class StepUtils {
      */
     public static boolean onPage(String name) {
 
-        ArrayList<String> expectedURLs = Elements.getValues(name + ".url");
+        expectedURLs = Elements.getValues(name + ".url");
 
         String currentURL = MainRunner.getCurrentUrl();
         if (MainRunner.debugMode) {
