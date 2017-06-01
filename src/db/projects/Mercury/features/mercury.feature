@@ -7,3 +7,4 @@ Feature: Mercury
     And I registered as a new user
     Then I verify my registration success state
     And I logout from my account
+    When I login to my new account

@@ -3,20 +3,26 @@ package db.shared.utils;
 import com.github.javafaker.Faker;
 import db.framework.utils.StepUtils;
 import db.framework.utils.Utils;
-import jxl.Workbook;
 import jxl.read.biff.BiffException;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.*;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
 public abstract class CommonUtils extends StepUtils {
+
+    public static List<String> new_account_details = new ArrayList<>();
 
     public static String userName;
     public static String password;
@@ -190,26 +196,62 @@ public abstract class CommonUtils extends StepUtils {
     }
 
     /**
+     * Method to write to a excel file
+     *
+     * @write data to a excel sheet using org.apache.poi library
+     */
+
+    public static void writeToAExcelSheet() throws IOException {
+        Workbook wb = new HSSFWorkbook();
+        CreationHelper createHelper = wb.getCreationHelper();
+        Sheet sheet = wb.createSheet("new sheet");
+
+        // Create a row and put some cells in it. Rows are 0 based.
+        Row row = sheet.createRow((short) 0);
+
+        row.createCell(0).setCellValue(createHelper.createRichTextString(userName));
+        row.createCell(1).setCellValue(createHelper.createRichTextString(password));
+
+        // Write the output to a file
+        FileOutputStream fileOut = new FileOutputStream(new File(getResourceFile("test_data.xls")));
+        wb.write(fileOut);
+        fileOut.close();
+    }
+
+    /**
      * Method to read excel file
      *
      * @return data from the excel sheet using jxl library
      */
-    public static List<String> getTestDataExcel() throws IOException, BiffException {
-        List<String> employee_names_list = new ArrayList<>();
-        File test_data = new File(getResourceFile("test_data.xls"));
-        Workbook wb = Workbook.getWorkbook(test_data);
-        int num_of_sheets = wb.getNumberOfSheets();
-        for (int i = 0; i < num_of_sheets; i++) {
-            int column_count = wb.getSheet(i).getColumns();
-            int row_count = wb.getSheet(i).getRows();
-            for (int j = 0; j < column_count; j++) {
-                for (int k = 0; k < row_count; k++) {
-                    String sh = wb.getSheet(i).getCell(j, k).getContents();
-                    employee_names_list.add(sh);
+    public static List<String> getTestDataFromExcelSheet() throws IOException, BiffException {
+        FileInputStream inputStream = new FileInputStream(new File(getResourceFile("test_data.xls")));
+        Workbook workbook = new HSSFWorkbook(inputStream);
+        Sheet firstSheet = workbook.getSheetAt(0);
+        Iterator<Row> iterator = firstSheet.iterator();
+
+        while (iterator.hasNext()) {
+            Row nextRow = iterator.next();
+            Iterator<Cell> cellIterator = nextRow.cellIterator();
+
+            while (cellIterator.hasNext()) {
+                Cell cell = cellIterator.next();
+
+                switch (cell.getCellTypeEnum()) {
+                    case STRING:
+                        new_account_details.add(cell.getStringCellValue());
+                        break;
+                    case BOOLEAN:
+                        new_account_details.add(String.valueOf(cell.getBooleanCellValue()));
+                        break;
+                    case NUMERIC:
+                        new_account_details.add(String.valueOf(cell.getNumericCellValue()));
+                        break;
                 }
             }
         }
-        return employee_names_list;
+        workbook.close();
+        inputStream.close();
+        return new_account_details;
     }
 
 }

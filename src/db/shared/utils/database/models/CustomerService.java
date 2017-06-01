@@ -88,7 +88,7 @@ public class CustomerService extends StepUtils {
      * @throws Throwable
      */
     public static List<String> getExcelFileData() throws Throwable {
-        List<String> excelData = CommonUtils.getTestDataExcel();
+        List<String> excelData = CommonUtils.getTestDataFromExcelSheet();
         return  excelData;
     }
 

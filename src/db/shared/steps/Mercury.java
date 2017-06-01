@@ -4,12 +4,16 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import cucumber.runtime.PendingException;
 import db.framework.interactions.*;
 import db.framework.utils.StepUtils;
 import db.shared.utils.CommonUtils;
-import org.junit.Assert;
 
+import org.junit.Assert;
 import static db.framework.interactions.Elements.element;
+import static db.shared.utils.CommonUtils.getTestDataFromExcelSheet;
+import static db.shared.utils.CommonUtils.new_account_details;
+import static db.shared.utils.CommonUtils.writeToAExcelSheet;
 
 /**
  * Created by dasunh on 6/1/2017.
@@ -21,12 +25,14 @@ public class Mercury extends StepUtils {
         Navigate.visit();
         Assert.assertTrue("ERROR-APP: Mercury home page is not loaded properly", title().equalsIgnoreCase("Welcome: Mercury Tours"));
         shouldBeOnPage("mercury_home");
+        System.out.print("User successfully landing into the mercury home page");
     }
 
     @When("^I navigate to the user registration page$")
     public void I_navigate_to_the_user_registration_page() throws Throwable {
         Clicks.clickIfPresent("mercury_home.lnk_register");
         shouldBeOnPage("mercury_register");
+        System.out.print("User successfully navigated into the user registration page");
     }
 
     @And("^I registered as a new user$")
@@ -53,6 +59,9 @@ public class Mercury extends StepUtils {
         shouldBeOnPage("mercury_reg_confirmation");
         String actual_user_name = Elements.getText("mercury_reg_confirmation.lbl_user_name").split(" ")[5].replace(".", "").toString();
         Assert.assertTrue("ERROR-APP: User name you have created is not matching with the registration confirmation page user name", CommonUtils.userName.equalsIgnoreCase(actual_user_name));
+        System.out.print(CommonUtils.userName + ": User New Account Successfully Created");
+        //Save user name and password  into a excel sheet
+        writeToAExcelSheet();
     }
 
     @And("^I logout from my account$")
@@ -60,6 +69,17 @@ public class Mercury extends StepUtils {
         Clicks.clickIfPresent("mercury_reg_confirmation.lnk_signOff");
         Wait.untilElementPresent("mercury_login.txt_user_name");
         shouldBeOnPage("mercury_login");
+        System.out.print(CommonUtils.userName + ": User successfully Logout");
     }
 
+    @When("^I login to my new account$")
+    public void I_login_to_my_new_account() throws Throwable {
+        shouldBeOnPage("mercury_login");
+        //Retrieve my new account details
+        getTestDataFromExcelSheet();
+        TextBoxes.typeTextbox(element("mercury_login.txt_user_name"), new_account_details.get(0));
+        TextBoxes.typeTextbox(element("mercury_login.txt_password"), new_account_details.get(1));
+        Clicks.clickIfPresent("mercury_login.btn_login");
+        System.out.print(CommonUtils.userName + ": Successfully Logged in");
+    }
 }
