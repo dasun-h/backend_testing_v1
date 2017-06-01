@@ -28,33 +28,44 @@
 <browser>firefox</browser>
 </environment_variables>-->
 
-<!--<environment_variables name="profile-04">
+<!--
+<environment_variables name="profile-04">
 <sauce_user></sauce_user>
 <sauce_key></sauce_key>
 <os></os>
 <scenarios>src/db/projects/sample/features/sample_test.feature</scenarios>
-<tags>@scenario2</tags>
+<tags>@scenario5</tags>
 <website>https://cloud.canopylabs.com/#/</website>
 <browser>firefox</browser>
+</environment_variables> -->
+
+<!--
+<environment_variables name="profile-05">
+<sauce_user></sauce_user>
+<sauce_key></sauce_key>
+<os></os>
+<scenarios>src/db/projects/sample/features/sample_test.feature</scenarios>
+<tags>@scenario3</tags>
+<website>http://the-internet.herokuapp.com/drag_and_drop</website>
+<browser>chrome</browser>
+</environment_variables> -->
+
+<!--<environment_variables name="profile-06">
+<sauce_user></sauce_user>
+<sauce_key></sauce_key>
+<os></os>
+<scenarios>src/db/projects/sample/features/sample_test.feature</scenarios>
+<tags>@scenario4</tags>
+<website>http://html5demos.com/drag#</website>
+<browser>chrome</browser>
 </environment_variables>-->
 
-<!--<environment_variables name="profile-05">
+<environment_variables name="profile-07">
     <sauce_user></sauce_user>
     <sauce_key></sauce_key>
     <os></os>
-    <scenarios>src/db/projects/sample/features/sample_test.feature</scenarios>
-    <tags>@scenario3</tags>
-    <website>http://the-internet.herokuapp.com/drag_and_drop</website>
-    <browser>chrome</browser>
-</environment_variables>-->
-
-<environment_variables name="profile-06">
-    <sauce_user></sauce_user>
-    <sauce_key></sauce_key>
-    <os></os>
-    <scenarios>src/db/projects/sample/features/sample_test.feature</scenarios>
-    <tags>@scenario4</tags>
-    <website>http://html5demos.com/drag#</website>
-    <browser>chrome</browser>
+    <scenarios>src/db/projects/Mercury/features/mercury.feature</scenarios>
+    <tags>@scenario1</tags>
+    <website>http://newtours.demoaut.com/</website>
+    <browser>firefox</browser>
 </environment_variables>
-

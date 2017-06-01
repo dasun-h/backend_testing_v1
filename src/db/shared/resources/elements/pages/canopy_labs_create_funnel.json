@@ -1,6 +1,6 @@
 {
   "url": "https://cloud.canopylabs.com/#/funnels/generate",
-  "verify_page": "cssSelector, .available-container",
-  "draggable": "cssSelector, ul>li.action-draggable-purchase",
-  "droppable": "cssSelector, .droppable.sortable.droppable-container.ng-scope"
+  "verify_page": "cssSelector~ .available-container",
+  "draggable": "cssSelector~ ul>li.action-draggable-purchase",
+  "droppable": "cssSelector~ .droppable.sortable.droppable-container.ng-scope"
 }

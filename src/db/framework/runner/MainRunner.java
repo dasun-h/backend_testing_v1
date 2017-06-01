@@ -634,9 +634,6 @@ public class MainRunner {
             return url;
         }
         String curUrl = driver.getCurrentUrl();
-        if (curUrl.matches(".*?data.*?")) {
-            return url;
-        }
         currentURL = curUrl;
         return curUrl;
     }

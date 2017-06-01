@@ -1,0 +1,17 @@
+{
+  "url": "http://newtours.demoaut.com/mercuryregister.php",
+  "verify_page": "xpath~ //input[@name='firstName']",
+  "txt_f_name": "xpath~ //input[@name='firstName']",
+  "txt_l_name": "xpath~ //input[@name='lastName']",
+  "txt_phone": "xpath~ //input[@name='phone']",
+  "txt_email": "xpath~ //input[@name='userName']",
+  "txt_address": "xpath~ //input[@name='address1']",
+  "txt_city": "xpath~ //input[@name='city']",
+  "txt_state": "xpath~ //input[@name='state']",
+  "txt_postal_code": "xpath~ //input[@name='postalCode']",
+  "drp_country": "xpath~ //select[@name='country']",
+  "txt_user_name": "xpath~ //input[@name='email']",
+  "txt_password": "xpath~ //input[@name='password']",
+  "txt_c_password": "xpath~ //input[@name='confirmPassword']",
+  "btn_submit": "xpath~ //input[@name='register']"
+}

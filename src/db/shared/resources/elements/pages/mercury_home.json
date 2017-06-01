@@ -1,0 +1,9 @@
+{
+  "url": "http://newtours.demoaut.com/",
+  "verify_page": "xpath~ //a[text()='REGISTER']",
+  "txt_user_name": "xpath~ //input[@name='userName']",
+  "txt_password": "xpath~ //input[@name='password']",
+  "btn_login": "xpath~ //input[@name='login']",
+  "lnk_register": "xpath~ //a[text()='REGISTER']",
+  "lnk_signIn": "xpath~ //a[text()='SIGN-ON']"
+}

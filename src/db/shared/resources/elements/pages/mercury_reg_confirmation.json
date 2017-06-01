@@ -1,0 +1,7 @@
+{
+  "url": "http://newtours.demoaut.com/create_account_success.php",
+  "verify_page": "xpath~ //b[contains(text(),'Note: Your user name is ')]",
+  "lbl_user_name": "xpath~ //b[contains(text(),'Note: Your user name is ')]",
+  "lnk_signOff": "xpath~ //a[text()='SIGN-OFF']",
+  "lnk_signIn": "xpath~ //a[text()=' sign-in ']"
+}

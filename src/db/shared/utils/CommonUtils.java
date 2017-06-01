@@ -1,31 +1,95 @@
 package db.shared.utils;
 
+import com.github.javafaker.Faker;
 import db.framework.utils.StepUtils;
 import db.framework.utils.Utils;
+import jxl.Workbook;
+import jxl.read.biff.BiffException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public abstract class CommonUtils extends StepUtils {
+
+    public static String userName;
+    public static String password;
+    public static String random_string;
+    public static String email;
+    public static String phoneNo;
+    public static String firstName;
+    public static String lastName;
+    public static int employeeID;
+
+    /**
+     * Util: Return Random Email Address
+     *
+     * @return String
+     */
+    public static String getEmailAddress() {
+        String name = new Faker().name().firstName();
+        email = name + "@malinator.com";
+        return email;
+    }
+
+    public static String randomString(int length) {
+        SecureRandom random = new SecureRandom();
+        char[] chars = new char[length];
+        for (int i = 0; i < chars.length; i++) {
+            int v = random.nextInt(10 + 26 + 26);
+            char c;
+            if (v < 10) {
+                c = (char) ('0' + v);
+            } else if (v < 36) {
+                c = (char) ('a' - 10 + v);
+            } else {
+                c = (char) ('A' - 36 + v);
+            }
+            chars[i] = c;
+        }
+        random_string = new String(chars);
+        return random_string;
+    }
+
+    /**
+     * Util: Return Random Phone Number
+     *
+     * @return static
+     */
+    public static String getPhoneNumber() {
+        phoneNo = new Faker().phoneNumber().phoneNumber();
+        return phoneNo;
+    }
+
+    public static String generateRandomFirstName() {
+        Faker faker = new Faker();
+        firstName = faker.name().firstName();
+        return firstName;
+    }
+
+    public static String generateRandomLastName() {
+        Faker faker = new Faker();
+        lastName = faker.name().lastName();
+        return lastName;
+    }
+
+    public static int genRandomNumber() {
+        Random r = new Random(System.currentTimeMillis());
+        employeeID = 10000 + r.nextInt(20000);
+        return employeeID;
+    }
+
     public static String generateRandomEmail(int length) {
         String allowedChars = "abcdefghijklmnopqrstuvwxyz" + "1234567890";
         String email = RandomStringUtils.random(length, allowedChars);
         email = email.substring(0, email.length()) + "@gmail.com";
         return email;
-    }
-
-    public static String generateRandomFirstName() {
-        String[] first_name_list = {"JAMES", "ALEXANDER", "ROBERT", "MICHAEL", "WILLIAM", "DAVID", "RICHARD", "CHARLES", "JOSEPH", "THOMAS", "CHRISTOPHER", "KASUN", "DASUN", "CHANDIKA", "DINUKA", "PAVITHRA", "KOSHILA", "RAJITHA"};
-        return first_name_list[new Random().nextInt(first_name_list.length)];
-    }
-
-    public static String generateRandomLastName() {
-        String[] last_name_list = {"SMITH", "JOHNSON", "BROWN", "JONES", "MILLER", "GARCIA", "RODRIGUEZ", "ANDERSON", "TAYLOR", "JUNG", "MOORE", "ALWIS", "HETTIARACHCHI", "PERERA", "HERATH", "JAYAWEERA", "RATHNAYAKE"};
-        return last_name_list[new Random().nextInt(last_name_list.length)];
     }
 
     public static String generateRandomMonth() {
@@ -69,6 +133,30 @@ public abstract class CommonUtils extends StepUtils {
         return new String(digits);
     }
 
+    public static String generatedUsrName(int length) {
+        char[] CHARSET_AZ_09 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
+        Random randomm = new SecureRandom();
+        char[] result = new char[length];
+        for (int i = 0; i < result.length; i++) {
+            int randomCharIndex = randomm.nextInt(CHARSET_AZ_09.length);
+            result[i] = CHARSET_AZ_09[randomCharIndex];
+        }
+        userName = new String(result);
+        return userName;
+
+    }
+
+    public static String generatedPassword(int length) {
+        String allowedChars = "0123456789abcdefghijklmnopqrstuvwABCDEFGHIJKLMNOP!§$%&?*+#";
+        SecureRandom random = new SecureRandom();
+        StringBuilder pass = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            pass.append(allowedChars.charAt(random.nextInt(allowedChars.length())));
+        }
+        password = pass.toString();
+        return password;
+    }
+
     /**
      * Gets a resource file with a given name
      *
@@ -100,4 +188,28 @@ public abstract class CommonUtils extends StepUtils {
         }
         return jsonObject;
     }
+
+    /**
+     * Method to read excel file
+     *
+     * @return data from the excel sheet using jxl library
+     */
+    public static List<String> getTestDataExcel() throws IOException, BiffException {
+        List<String> employee_names_list = new ArrayList<>();
+        File test_data = new File(getResourceFile("test_data.xls"));
+        Workbook wb = Workbook.getWorkbook(test_data);
+        int num_of_sheets = wb.getNumberOfSheets();
+        for (int i = 0; i < num_of_sheets; i++) {
+            int column_count = wb.getSheet(i).getColumns();
+            int row_count = wb.getSheet(i).getRows();
+            for (int j = 0; j < column_count; j++) {
+                for (int k = 0; k < row_count; k++) {
+                    String sh = wb.getSheet(i).getCell(j, k).getContents();
+                    employee_names_list.add(sh);
+                }
+            }
+        }
+        return employee_names_list;
+    }
+
 }

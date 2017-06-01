@@ -1,6 +1,6 @@
 {
 "url": "http://html5demos.com/drag#",
-"verify_page": "cssSelector, section#wrapper",
-"draggable": "cssSelector, a#one",
-"droppable": "cssSelector, div#bin"
+"verify_page": "cssSelector~ section#wrapper",
+"draggable": "cssSelector~ a#one",
+"droppable": "cssSelector~ div#bin"
 }

@@ -67,15 +67,15 @@ public class PageElement {
 
         // parse element String
         for (String value : values.split("\\|\\|")) {
-            if (value.contains(",")) {
-                String[] parts = value.split(Pattern.quote(","));
+            if (value.contains("~")) {
+                String[] parts = value.split(Pattern.quote("~"));
 
                 String locator = parts[0].trim();
 
                 // add only valid locator and corresponding value
                 if (isValidLocatorStrategy(locator)) {
                     elementLocators.add(locator);
-                    value = value.replace(locator + ",", "").trim();
+                    value = value.replace(locator + "~", "").trim();
                     elementValues.add(value);
                 } else {
                     System.err.println("wrong locator : " + locator);

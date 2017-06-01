@@ -1,0 +1,7 @@
+{
+  "url": "http://newtours.demoaut.com/mercurysignon.php",
+  "verify_page": "xpath~ //input[@name='userName']",
+  "txt_user_name": "xpath~ //input[@name='userName']",
+  "txt_password": "xpath~ //input[@name='password']",
+  "btn_login": "xpath~ //input[@name='login']"
+}

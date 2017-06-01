@@ -4,10 +4,10 @@
     "panel.footer"
   ],
   "url": "http://10.101.15.48:8080/dbtest/delete.php",
-  "remove_confirmation_btn": "cssSelector, .btn-primary[name='btn-del']",
-  "remove_cancellation_btn": "cssSelector, a.btn-success",
-  "deleted_users_tbl": "cssSelector, .table.table-bordered.table",
-  "remove_message": "cssSelector, .alert-danger",
-  "back_to_index_btn": "cssSelector, .btn-success",
-  "remove_success_message": "cssSelector, .alert-success"
+  "remove_confirmation_btn": "cssSelector~ .btn-primary[name='btn-del']",
+  "remove_cancellation_btn": "cssSelector~ a.btn-success",
+  "deleted_users_tbl": "cssSelector~ .table.table-bordered.table",
+  "remove_message": "cssSelector~ .alert-danger",
+  "back_to_index_btn": "cssSelector~ .btn-success",
+  "remove_success_message": "cssSelector~ .alert-success"
 }

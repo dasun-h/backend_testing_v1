@@ -23,3 +23,8 @@ Feature: Sample
   Scenario: Verify Drag and Drop in html5demo app
     Given I visit the drag and drop html5demo app
     And I drag and drop html5demo app elements
+
+  @scenario5
+  Scenario: Verifying retrieving test data from excel sheet - Scenario 05
+    And I retrieve test data from excel sheet
+

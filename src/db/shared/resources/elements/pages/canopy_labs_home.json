@@ -1,5 +1,5 @@
 {
   "url": "https://cloud.canopylabs.com/#/funnels",
-  "verify_page": "cssSelector, table.table.table",
-  "create_btn": "xpath, //*[@id='canopy-app-main']//div/span/a/span"
+  "verify_page": "cssSelector~ table.table.table",
+  "create_btn": "xpath~ //*[@id='canopy-app-main']//div/span/a/span"
 }

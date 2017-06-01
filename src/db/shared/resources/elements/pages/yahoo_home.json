@@ -1,9 +1,9 @@
 {
   "url": "https://www.yahoo.com/",
-  "verify_page": "cssSelector, #uh-logo",
-  "logo_text": "cssSelector, #uh-logo>b",
-  "header_tool_bar": "cssSelector, div#mega-topbar>ul",
-  "left_navigation_bar": "cssSelector, #Navigation",
-  "search_text_box": "cssSelector, #uh-search-box",
-  "search_btn": "cssSelector, #uh-search-button"
+  "verify_page": "cssSelector~ #uh-logo",
+  "logo_text": "cssSelector~ #uh-logo>b",
+  "header_tool_bar": "cssSelector~ div#mega-topbar>ul",
+  "left_navigation_bar": "cssSelector~ #Navigation",
+  "search_text_box": "cssSelector~ #uh-search-box",
+  "search_btn": "cssSelector~ #uh-search-button"
 }

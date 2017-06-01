@@ -117,4 +117,10 @@ public class DB_Tester extends StepUtils {
             Assert.fail("ERROR-DATA: Record not deleted from the database!!");
         }
     }
+
+    @When("^I retrieve test data from excel sheet$")
+    public void I_retrieve_test_data_from_excel_sheet() throws Throwable {
+        String excelInfo = CustomerService.getExcelFileData().get(0);
+
+    }
 }

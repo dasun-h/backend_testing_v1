@@ -4,12 +4,12 @@
     "panel.footer"
   ],
   "url": "http://10.101.15.48:8080/dbtest/add-data.php",
-  "create_new_record_btn": "cssSelector, .btn-primary[name='btn-save']",
-  "back_to_index_btn": "cssSelector, .btn-success",
-  "first_name": "cssSelector, .form-control[name='first_name']",
-  "last_name": "cssSelector, .form-control[name='last_name']",
-  "email": "cssSelector, .form-control[name='email_id']",
-  "contact_id": "cssSelector, .form-control[name='contact_no']",
-  "success_msg": "cssSelector, .alert-info",
-  "warning_msg": "cssSelector, .alert-warning"
+  "create_new_record_btn": "cssSelector~ .btn-primary[name='btn-save']",
+  "back_to_index_btn": "cssSelector~ .btn-success",
+  "first_name": "cssSelector~ .form-control[name='first_name']",
+  "last_name": "cssSelector~ .form-control[name='last_name']",
+  "email": "cssSelector~ .form-control[name='email_id']",
+  "contact_id": "cssSelector~ .form-control[name='contact_no']",
+  "success_msg": "cssSelector~ .alert-info",
+  "warning_msg": "cssSelector~ .alert-warning"
 }

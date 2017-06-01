@@ -8,6 +8,7 @@ import db.shared.utils.database.utils.DBUtilities;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.List;
 
 public class CustomerService extends StepUtils {
 
@@ -78,6 +79,17 @@ public class CustomerService extends StepUtils {
             clientInformation = new String[]{TypeCode, TypeDesc, ColorCode};
         }
         return clientInformation;
+    }
+
+    /**
+     * Method to get excel information
+     *
+     * @return excel information
+     * @throws Throwable
+     */
+    public static List<String> getExcelFileData() throws Throwable {
+        List<String> excelData = CommonUtils.getTestDataExcel();
+        return  excelData;
     }
 
 }

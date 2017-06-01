@@ -73,7 +73,7 @@ public class Sample extends StepUtils {
     @And("^I drag and drop canopy labs sequence")
     public void I_drag_and_drop_canopy_labs_sequence() throws Throwable {
         dragAndDropForNormalApps(element("canopy_labs_create_funnel.draggable"), element("canopy_labs_create_funnel.droppable"));
-        Assert.assertFalse("Error - Drag and Drop Failed", elementPresent(element("canopy_labs_create_funnel.droppable")));
+        Assert.assertFalse("Error - Drag and Drop Failed", elementPresent(element("canopy_labs_create_funnel.draggable")));
         System.out.print("Drag and Drop Successfully Triggered");
     }
 
