@@ -67,5 +67,5 @@
     <scenarios>src/db/projects/Mercury/features/mercury.feature</scenarios>
     <tags>@scenario1</tags>
     <website>http://newtours.demoaut.com/</website>
-    <browser>firefox</browser>
+    <browser>chrome</browser>
 </environment_variables>

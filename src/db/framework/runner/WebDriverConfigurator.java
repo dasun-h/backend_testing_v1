@@ -180,7 +180,7 @@ class WebDriverConfigurator {
  */
     private static void setChromeDriverLocation() {
         if (StepUtils.chrome()) {
-            String fileName = "chromedriver2_25.exe";
+            String fileName = "chromedriverWin2_28.exe";
             String path = "src/db/framework/selenium_drivers/" + fileName;
             File file = new File(MainRunner.workspace + path);
             if (file.exists()) {
